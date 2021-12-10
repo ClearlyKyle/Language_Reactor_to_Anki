@@ -1,0 +1,37 @@
+{
+  "manifest_version": 2,
+  "name": "languagereactor to Anki",
+  "description": "Create Anki cards from sentences on languagereactor",
+  "version": "1.0",
+  "author": "@clearlykyle",
+  "permissions": [
+    "storage"
+  ],
+  "content_scripts": [
+    {
+      "all_frames": true,
+      "js": [
+        "src/inject/content_script.js",
+        "res/toastify.js"
+      ],
+      "css": [
+        "res/toastify.css"
+      ],
+      "matches": [
+        "https://www.languagereactor.com/text",
+        "https://www.languagereactor.com/player"
+      ],
+      "run_at": "document_end"
+    }
+  ],
+  "browser_action": {
+    "default_title": "default_title",
+    "default_popup": "popup/popup.html"
+  },
+  "background": {
+    "scripts": [
+      "src/bg/background.js"
+    ],
+    "persistent": true
+  }
+}

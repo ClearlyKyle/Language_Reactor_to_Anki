@@ -1,0 +1,49 @@
+<html>
+
+<head>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <script src="popup.js"></script>
+</head>
+
+<body>
+    <form>
+        <p>
+            <b>Settings</b>
+        </p>
+        <hr>
+        <label>
+            <span>Localhost</span>
+            <input type="text" id="ankiConnectUrl" value="http://localhost:8765">
+        </label>
+        <hr>
+        <label>
+            <span>Deck</span>
+            <select id="ankiDeckNameSelected"></select>
+        </label>
+        <label>
+            <span>Card</span>
+            <select id="ankiNoteNameSelected"></select>
+        </label>
+        <hr>
+        <label>
+            <span>Word</span>
+            <select id="ankiFieldWord"></select>
+        </label>
+        <label>
+            <span>Sentence</span>
+            <select id="ankiSentence"></select>
+        </label>
+        <label>
+            <span>Basic Translation</span>
+            <select id="ankiBasicTranslation"></select>
+        </label>
+        <label>
+            <span>Extra Translation</span>
+            <select id="ankiExtraTranslation"></select>
+        </label>
+        <hr>
+        <input id="saveAnkiBtn" type="button" value="Submit">
+    </form>
+</body>
+
+</html>
