@@ -22,70 +22,96 @@
 					{ // READ mode is selected
 						SendMessageToBackGround("[MODE] READ MODE!")
 
-						// When switching to READ mode, the page takes some time to load all the text, we set
-						//  an interval and wait for this to be complete...
-						let wait_for_words_to_be_ready = setInterval(function ()
-						{
-							if (document.getElementsByClassName('lln-word').length)
-							{
-								clearInterval(wait_for_words_to_be_ready);
-								console.log("WOOHOO WE ARE READY TO READ!!")
-
-								Add_On_Click_To_All_Words(); // add an 'onClick' event to every word!
-
-								var dict_wrap_observer = new MutationObserver(function (mutations)
-								{
-									// possible loss of Anki button after selecting a word with no transaltion 
-									if (document.getElementsByClassName('MuiDrawer-paperAnchorRight')[0].length)
-									{
-										console.log(document.getElementsByClassName('MuiDrawer-paperAnchorRight')[0].innerText)
-									}
-									if (document.getElementsByClassName('MuiDrawer-paperAnchorRight')[0].style.visibility != 'hidden')
-									{
-										SendMessageToBackGround("Dictionary is visible");
-										console.log("Dictionary is visible");
-										if (document.getElementsByClassName('lln-full-dict-label').length)
-										{
-											// 'Word not found.'
-											console.log(document.getElementsByClassName('lln-full-dict-label')[0].innerText)
-											console.log("NO TRANSLATION FOR THIS WORD!!")
-										}
-										else
-										{
-											if (!document.getElementsByClassName('anki-btn').length)
-											{
-												// Currently no Anki button, so we add one
-												// console.log("Add Anki button");
-												Add_Anki_Button();
-											}
-										}
-									}
-									else
-									{
-										SendMessageToBackGround("Dictionary is hidden");
-										console.log("Dictionary is hidden");
-									}
-								});
-								dict_wrap_observer.observe(document.getElementsByClassName('MuiDrawer-paperAnchorRight')[0],
-									{
-										attributes: true,
-										childList: true,
-										subtree: true
-									}
-								);
-							}
-							else
-							{
-								// wait for words to be ready to READ
-								console.log("waiting for words...")
-							}
-						}, 100);
+						OnReadMode();
 					}
 					else
 					{ // EDIT mode is selected
 						SendMessageToBackGround("[MODE] EDIT MODE!")
 					}
 				}
+
+				console.log("Add onclick to the \"Go to Reader mode\" button...")
+
+				var aTags = document.getElementsByTagName('button');
+				var searchText = "Go to Reader mode";
+				var found;
+
+				for (var i = 0; i < aTags.length; i++)
+				{
+					if (aTags[i].textContent == searchText)
+					{
+						found = aTags[i];
+						break;
+					}
+				}
+				found.onclick = function ()
+				{
+					SendMessageToBackGround("[MODE] SWITCHING TO READ MODE!")
+					console.log("[MODE] SWITCHING TO READ MODE!")
+					OnReadMode();
+				}
+			}
+		}, 100);
+	}
+	function OnReadMode()
+	{
+		// When switching to READ mode, the page takes some time to load all the text, we set
+		//  an interval and wait for this to be complete...
+		let wait_for_words_to_be_ready = setInterval(function ()
+		{
+			if (document.getElementsByClassName('lln-word').length)
+			{
+				clearInterval(wait_for_words_to_be_ready);
+				console.log("WOOHOO WE ARE READY TO READ!!")
+
+				if (typeof document.getElementsByClassName('lln-word')[0].onclick != 'function')
+					Add_On_Click_To_All_Words(); // add an 'onClick' event to every word!
+
+				var dict_wrap_observer = new MutationObserver(function (mutations)
+				{
+					// possible loss of Anki button after selecting a word with no transaltion 
+					if (document.getElementsByClassName('MuiDrawer-paperAnchorRight')[0].length)
+					{
+						console.log(document.getElementsByClassName('MuiDrawer-paperAnchorRight')[0].innerText)
+					}
+					if (document.getElementsByClassName('MuiDrawer-paperAnchorRight')[0].style.visibility != 'hidden')
+					{
+						SendMessageToBackGround("Dictionary is visible");
+						console.log("Dictionary is visible");
+						if (document.getElementsByClassName('lln-full-dict-label').length)
+						{
+							// 'Word not found.'
+							console.log(document.getElementsByClassName('lln-full-dict-label')[0].innerText)
+							console.log("NO TRANSLATION FOR THIS WORD!!")
+						}
+						else
+						{
+							if (!document.getElementsByClassName('anki-btn').length)
+							{
+								// Currently no Anki button, so we add one
+								// console.log("Add Anki button");
+								Add_Anki_Button();
+							}
+						}
+					}
+					else
+					{
+						SendMessageToBackGround("Dictionary is hidden");
+						console.log("Dictionary is hidden");
+					}
+				});
+				dict_wrap_observer.observe(document.getElementsByClassName('MuiDrawer-paperAnchorRight')[0],
+					{
+						attributes: true,
+						childList: true,
+						subtree: true
+					}
+				);
+			}
+			else
+			{
+				// wait for words to be ready to READ
+				console.log("waiting for words...")
 			}
 		}, 100);
 	}
@@ -207,9 +233,9 @@
 
 				var fields = {
 					[ankiFieldWord]: data['word'],
-					[ankiSentence]: data['basic-translation'],
-					[ankiBasicTranslation]: data['extra-translation'],
-					[ankiExtraTranslation]: data['sentence']
+					[ankiSentence]: data['sentence'],
+					[ankiBasicTranslation]: data['basic-translation'],
+					[ankiExtraTranslation]: data['extra-translation']
 				};
 
 				console.log(fields)
