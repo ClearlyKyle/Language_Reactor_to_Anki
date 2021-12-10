@@ -188,10 +188,8 @@
 		console.log(data)
 
 		chrome.storage.local.get(
-			['ankiDeckNameSelected', 'ankiNoteNameSelected', 'ankiFieldScreenshotSelected', 'ankiSubtitleSelected', 'ankiSubtitleTranslation',
-				'ankiWordSelected', "ankiBasicTranslationSelected", "ankiOtherTranslationSelected", "ankiFieldURL", "ankiConnectUrl"],
-			({ ankiDeckNameSelected, ankiNoteNameSelected, ankiFieldScreenshotSelected, ankiSubtitleSelected, ankiSubtitleTranslation,
-				ankiWordSelected, ankiBasicTranslationSelected, ankiOtherTranslationSelected, ankiFieldURL, ankiConnectUrl }) =>
+			['ankiDeckNameSelected', 'ankiNoteNameSelected', 'ankiFieldWord', 'ankiSentence', 'ankiBasicTranslation', 'ankiExtraTranslation', 'ankiConnectUrl'],
+			({ ankiDeckNameSelected, ankiNoteNameSelected, ankiFieldWord, ankiSentence, ankiBasicTranslation, ankiExtraTranslation, ankiConnectUrl }) =>
 			{
 				url = ankiConnectUrl || 'http://localhost:8765';
 				model = ankiNoteNameSelected || 'Basic';
@@ -199,8 +197,7 @@
 
 				console.log(
 					{
-						ankiDeckNameSelected, ankiNoteNameSelected, ankiFieldScreenshotSelected, ankiSubtitleSelected, ankiSubtitleTranslation,
-						ankiWordSelected, ankiBasicTranslationSelected, ankiOtherTranslationSelected, ankiFieldURL, ankiConnectUrl
+						ankiDeckNameSelected, ankiNoteNameSelected, ankiFieldWord, ankiSentence, ankiBasicTranslation, ankiExtraTranslation, ankiConnectUrl
 					}
 				)
 
@@ -209,13 +206,10 @@
 				console.log("Model Name: ", deck)
 
 				var fields = {
-					[ankiFieldScreenshotSelected]: '<img src="' + data['image-filename'] + '" />',
-					[ankiSubtitleSelected]: data['subtitle'],
-					[ankiSubtitleTranslation]: data['subtitle-translation'],
-					[ankiWordSelected]: data['word'],
-					[ankiBasicTranslationSelected]: data['basic-translation'],
-					[ankiOtherTranslationSelected]: data['extra-translation'],
-					[ankiFieldURL]: data['url']
+					[ankiFieldWord]: data['word'],
+					[ankiSentence]: data['basic-translation'],
+					[ankiBasicTranslation]: data['extra-translation'],
+					[ankiExtraTranslation]: data['sentence']
 				};
 
 				console.log(fields)
@@ -225,20 +219,13 @@
 					"params": {
 						"actions": [
 							{
-								"action": "storeMediaFile",
-								"params": {
-									"filename": data['image-filename'],
-									"data": data['image-data']
-								}
-							},
-							{
 								"action": "addNote",
 								"params": {
 									"note": {
 										"modelName": model,
 										"deckName": deck,
 										"fields": fields,
-										"tags": ["LLW_to_Anki"]
+										"tags": ["languagereactor_anki"]
 									}
 								}
 							}
