@@ -1,6 +1,49 @@
 console.log("----- [background.js] LOADED");
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse)
+function Add_onUpdate()
 {
-    console.log(request.message)
-});
+    console.log("----- [background.js] Add_onUpdate");
+
+    chrome.runtime.onMessage.addListener(function (request, sender, sendResponse)
+    {
+        console.log(request.message)
+        return true; // Inform Chrome that we will make a delayed sendResponse
+    });
+
+    chrome.tabs.onUpdated.addListener(
+        function (tabId, changeInfo, tab)
+        {
+            if (changeInfo.status == 'complete' && tab.status == 'complete' && tab.url != undefined)
+            {
+                console.log("Updated tab (" + tabId + ")=>>> " + tab.url);
+
+                if (tab.url.includes("languagereactor.com"))
+                {
+                    if (tab.url.indexOf("languagereactor") != -1)
+                    {
+                        if (tab.url.indexOf("player") != -1)
+                        {
+                            var message = "player";
+                        }
+                        else if (tab.url.indexOf("text") != -1)
+                        {
+                            var message = "text";
+                        }
+                        else if (tab.url.indexOf("video") != -1)
+                        {
+                            var message = "video";
+                        }
+                    }
+                    console.log("Sending message: " + message)
+                    chrome.tabs.sendMessage(tab.id, {
+                        mode: message
+                    });
+                }
+            }
+        }
+    );
+
+    return true;
+}
+
+Add_onUpdate()
