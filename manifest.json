@@ -1,37 +1,34 @@
 {
-  "manifest_version": 2,
-  "name": "languagereactor to Anki",
-  "description": "Create Anki cards from sentences on languagereactor",
-  "version": "1.0",
-  "author": "@clearlykyle",
-  "permissions": [
-    "storage"
-  ],
-  "content_scripts": [
-    {
-      "all_frames": true,
-      "js": [
-        "src/inject/content_script.js",
-        "res/toastify.js"
-      ],
-      "css": [
-        "res/toastify.css"
-      ],
-      "matches": [
-        "https://www.languagereactor.com/text",
-        "https://www.languagereactor.com/player"
-      ],
-      "run_at": "document_end"
-    }
-  ],
-  "browser_action": {
-    "default_title": "languagereactor to Anki Settings",
-    "default_popup": "src/popup/popup.html"
-  },
-  "background": {
-    "scripts": [
-      "src/bg/background.js"
+    "manifest_version": 3,
+    "name": "languagereactor to Anki",
+    "description": "Create Anki cards from sentences on languagereactor",
+    "version": "1.0",
+    "author": "@clearlykyle",
+    "permissions": [
+        "storage",
+        "tabs"
     ],
-    "persistent": true
-  }
+    "content_scripts": [
+        {
+            "all_frames": true,
+            "js": [
+                "src/inject/content_script.js",
+                "res/toastify.js"
+            ],
+            "css": [
+                "res/toastify.css"
+            ],
+            "matches": [
+                "*://*.languagereactor.com/*"
+            ],
+            "run_at": "document_start"
+        }
+    ],
+    "action": {
+        "default_title": "languagereactor to Anki Settings",
+        "default_popup": "src/popup/popup.html"
+    },
+    "background": {
+        "service_worker": "src/bg/background.js"
+    }
 }
