@@ -141,7 +141,13 @@
 
     function Add_Anki_Button()
     {
+        // sometimes the location we want to put the button, isn't quite ready, so we wait a little...
+        let wait_for_button_location_to_be_ready = setInterval(function ()
+        {
         const btn_location = document.getElementsByClassName('lln-external-dicts-container')[0];
+            if (btn_location)
+            {
+                clearInterval(wait_for_button_location_to_be_ready);
 
         /* create Anki Button */
         let anki_div = document.createElement("div");
@@ -152,6 +158,8 @@
         anki_div.onclick = Handle_Side_Bar_Dictionary;
 
         btn_location.appendChild(anki_div);
+    }
+        }, 100);
     }
 
     function Add_Dictionary_Observer()
