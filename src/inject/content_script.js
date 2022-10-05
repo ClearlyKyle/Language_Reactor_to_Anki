@@ -174,6 +174,7 @@
     {
         var dict_wrap_observer = new MutationObserver(function (mutations)
         {
+            console.log("mutation : dict_wrap_observer")
             // possible loss of Anki button after selecting a word with no transaltion 
             if (document.getElementsByClassName('MuiDrawer-paperAnchorRight')[0].length)
             {
@@ -182,34 +183,17 @@
             if (document.getElementsByClassName('MuiDrawer-paperAnchorRight')[0].style.visibility != 'hidden')
             {
                 SendMessageToBackGround("Dictionary is visible");
-                console.log("Dictionary is visible");
-                if (document.getElementsByClassName('lln-full-dict-label').length)
-                {
-                    // 'Word not found.'
-                    console.log(document.getElementsByClassName('lln-full-dict-label')[0].innerText)
-                    console.log("NO TRANSLATION FOR THIS WORD!!")
-                }
-                else
-                {
-                    if (!document.getElementsByClassName('anki-btn').length)
-                    {
-                        // Currently no Anki button, so we add one
-                        // console.log("Add Anki button");
-                        Add_Anki_Button();
-                    }
-                }
+
+                //Add_Anki_Button();
             }
             else
             {
                 SendMessageToBackGround("Dictionary is hidden");
-                console.log("Dictionary is hidden");
             }
         });
         dict_wrap_observer.observe(document.getElementsByClassName('MuiDrawer-paperAnchorRight')[0],
             {
-                //attributes: true,
-                childList: true,
-                subtree: true
+                attributes: true,
             }
         );
     }
