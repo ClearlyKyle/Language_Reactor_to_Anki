@@ -141,6 +141,14 @@
 
     function Add_Anki_Button()
     {
+        SendMessageToBackGround("Add Anki button to side dictionary")
+
+        if (!document.getElementsByClassName('anki-btn')[0])
+        {
+            SendMessageToBackGround("Anki button alreay exists so dont add another")
+            return;
+        }
+
         // sometimes the location we want to put the button, isn't quite ready, so we wait a little...
         let wait_for_button_location_to_be_ready = setInterval(function ()
         {
