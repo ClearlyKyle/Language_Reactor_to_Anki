@@ -58,9 +58,12 @@
                 console.log("Main is ready!")
 
                 // add an 'onClick' event to the "READ/EDIT" toggle button
-                document.getElementsByClassName('MuiSwitch-input')[0].onclick = function ()
+                let read_edit_mode_switch = document.getElementsByClassName('MuiSwitch-input')[0];
+                let go_to_read_mode_button = document.getElementsByClassName('MuiButton-containedPrimary')[0];
+
+                read_edit_mode_switch.onclick = function ()
                 {
-                    if (document.getElementsByClassName('MuiSwitch-input')[0].checked)
+                    if (read_edit_mode_switch.checked)
                     { // READ mode is selected
                         SendMessageToBackGround("[MODE] READ MODE!")
 
@@ -69,27 +72,32 @@
                     else
                     { // EDIT mode is selected
                         SendMessageToBackGround("[MODE] EDIT MODE!")
-                    }
-                }
 
-                console.log("Add onclick to the \"Go to Reader mode\" button...")
+                        // This is bellow the input box for the text
 
-                var aTags = document.getElementsByTagName('button');
-                var searchText = "Go to Reader mode";
-                var found;
-
-                for (var i = 0; i < aTags.length; i++)
+                        let wait_for_read_mode_button = setInterval(() =>
                 {
-                    if (aTags[i].textContent == searchText)
+                            let go_to_read_mode_button = document.getElementsByClassName('MuiButton-containedPrimary')[0];
+                            SendMessageToBackGround("waiting for read_mode_button")
+                            if (go_to_read_mode_button)
                     {
-                        found = aTags[i];
-                        break;
+                                clearInterval(wait_for_read_mode_button)
+                                SendMessageToBackGround("adding onlcick for read_mode_button")
+
+                                go_to_read_mode_button.onclick = function ()
+                                {
+                                    SendMessageToBackGround("[MODE] READ MODE!")
+                                    OnReadMode();
                     }
                 }
-                found.onclick = function ()
+                        }, 100);
+                    }
+                }
+
+                // This is bellow the input box for the text
+                go_to_read_mode_button.onclick = function ()
                 {
-                    SendMessageToBackGround("[MODE] SWITCHING TO READ MODE!")
-                    console.log("[MODE] SWITCHING TO READ MODE!")
+                    SendMessageToBackGround("[MODE] READ MODE BOTTOM BUTTOM!")
                     OnReadMode();
                 }
             }
