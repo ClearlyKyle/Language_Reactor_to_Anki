@@ -40,8 +40,6 @@
                     Reactor_Video_Mode();
                 }
             }
-
-            return true;
         }
     );
 
@@ -76,11 +74,11 @@
                         // This is bellow the input box for the text
 
                         let wait_for_read_mode_button = setInterval(() =>
-                {
+                        {
                             let go_to_read_mode_button = document.getElementsByClassName('MuiButton-containedPrimary')[0];
                             SendMessageToBackGround("waiting for read_mode_button")
                             if (go_to_read_mode_button)
-                    {
+                            {
                                 clearInterval(wait_for_read_mode_button)
                                 SendMessageToBackGround("adding onlcick for read_mode_button")
 
@@ -88,8 +86,8 @@
                                 {
                                     SendMessageToBackGround("[MODE] READ MODE!")
                                     OnReadMode();
-                    }
-                }
+                                }
+                            }
                         }, 100);
                     }
                 }
@@ -129,7 +127,15 @@
         //  an interval and wait for this to be complete...
         let wait_for_words_to_be_ready = setInterval(function ()
         {
-            if (document.getElementsByClassName('lln-word').length)
+            // wait for words to be ready to READ
+            console.log("waiting for words...")
+
+            // word in text = class="dc-down dc-hover dc-lang-ru dc-orig"
+            // word in dict =        dc-down dc-hover dc-lang-ru dc-orig
+
+            // This length will be 1 until the sentences are loaded
+            const reading_mode = document.getElementsByTagName('main')[0].childNodes[1].childNodes[1].childNodes[0].children[0].children[0].children.length;
+            if (reading_mode > 1)
             {
                 clearInterval(wait_for_words_to_be_ready);
                 console.log("WOOHOO WE ARE READY TO READ!!")
@@ -139,11 +145,6 @@
 
                 Add_Dictionary_Observer();
             }
-            else
-            {
-                // wait for words to be ready to READ
-                console.log("waiting for words...")
-            }
         }, 100);
     }
 
@@ -151,30 +152,31 @@
     {
         SendMessageToBackGround("Add Anki button to side dictionary")
 
-        if (!document.getElementsByClassName('anki-btn')[0])
-        {
-            SendMessageToBackGround("Anki button alreay exists so dont add another")
-            return;
-        }
-
         // sometimes the location we want to put the button, isn't quite ready, so we wait a little...
         let wait_for_button_location_to_be_ready = setInterval(function ()
         {
-        const btn_location = document.getElementsByClassName('lln-external-dicts-container')[0];
+            const btn_location = document.getElementsByClassName('lln-external-dicts-container')[0];
+
             if (btn_location)
             {
                 clearInterval(wait_for_button_location_to_be_ready);
 
-        /* create Anki Button */
-        let anki_div = document.createElement("div");
-        anki_div.className = "anki-btn lln-external-dict-btn tippy";
-        anki_div.innerHTML = "Anki";
-        anki_div.setAttribute("data-tippy-content", "Send to Anki");
+                if (document.getElementsByClassName('anki-btn')[0])
+                {
+                    SendMessageToBackGround("Anki button alreay exists so dont add another")
+                    return;
+                }
 
-        anki_div.onclick = Handle_Side_Bar_Dictionary;
+                /* create Anki Button */
+                let anki_div = document.createElement("div");
+                anki_div.className = "anki-btn lln-external-dict-btn tippy";
+                anki_div.innerHTML = "Anki";
+                anki_div.setAttribute("data-tippy-content", "Send to Anki");
 
-        btn_location.appendChild(anki_div);
-    }
+                anki_div.onclick = Handle_Side_Bar_Dictionary;
+
+                btn_location.appendChild(anki_div);
+            }
         }, 100);
     }
 
@@ -232,7 +234,6 @@
         else
         {
             SendMessageToBackGround("[Handle_Side_Bar_Dictionary] Error finding the sentence...")
-            console.log("[Handle_Side_Bar_Dictionary] Error finding the sentence...")
         }
 
         var fields = {
@@ -244,25 +245,23 @@
             "example-sentences": example_sentences,
         };
 
-        console.log(fields)
-        SendMessageToBackGround(fields);
-
         Send_data_to_ANKI(fields);
     }
 
     function Add_On_Click_To_All_Words()
     {
         SendMessageToBackGround("[Add_On_Click_To_All_Words] Adding all onClick events...")
-        console.log("[Add_On_Click_To_All_Words] Adding all onClick events...")
 
-        var all_subs = document.querySelectorAll('.lln-word');
+        //var all_subs = document.querySelectorAll('.lln-word');
+        var all_subs = document.getElementsByTagName('main')[0].childNodes[1].childNodes[1].childNodes[0].children[0].children[0].children;
         Array.from(all_subs).map((child) =>
         {
             child.onclick = function (event)
             {
                 // attach event listener individually
                 SendMessageToBackGround("CLICKED WORD : " + event.target.innerText)
-                console.log("CLICKED WORD : " + event.target.innerText)
+
+                Add_Anki_Button();
 
                 if (document.getElementsByClassName('anki-word').length)
                 {
@@ -287,9 +286,8 @@
 
     function Send_data_to_ANKI(data)
     {
-        console.log("[Send_data_to_ANKI] Sending to Anki...")
         SendMessageToBackGround("[Send_data_to_ANKI] Sending to Anki...")
-        console.log(data)
+        SendMessageToBackGround(data)
 
         let add_image = false;
         if (window.location.href.includes("video"))
@@ -323,11 +321,10 @@
 
                 console.log(
                     {
-                        ankiDeckNameSelected, ankiNoteNameSelected, ankiFieldWord, ankiSentence, ankiBasicTranslation, ankiExtraTranslation, ankiConnectUrl
+                        ankiDeckNameSelected, ankiNoteNameSelected, ankiFieldWord, ankiSentence, ankiSentenceTranslation, ankiExampleSentence, ankiBasicTranslation, ankiExtraTranslation, ankiConnectUrl
                     }
                 )
 
-                console.log("Image File Name: ", data['image-filename'])
                 console.log("Deck Name: ", model)
                 console.log("Model Name: ", deck)
 
@@ -341,7 +338,7 @@
                         [ankiSentenceTranslation]: data['sentence-translation'],
                         [ankiBasicTranslation]: data['basic-translation'],
                         [ankiExtraTranslation]: data['extra-translation'],
-                        [ankiExampleSentence]: data['example-sentences']
+                        [ankiExampleSentence]: data['example-sentences'],
                         "Screenshot": '<img src="' + imageFilename + '" />',
                     };
 
@@ -376,8 +373,10 @@
                     var fields = {
                         [ankiFieldWord]: data['word'],
                         [ankiSentence]: data['sentence'],
+                        [ankiSentenceTranslation]: data['sentence-translation'],
                         [ankiBasicTranslation]: data['basic-translation'],
                         [ankiExtraTranslation]: data['extra-translation'],
+                        [ankiExampleSentence]: data['example-sentences'],
                         "Screenshot": '',
                     };
 
@@ -447,7 +446,6 @@
                         /* show error message */
                         ShowErrorMessage("Error! " + error);
                     });
-                console.log("Send to ANKI complete!");
                 SendMessageToBackGround("[LLW_Send_Data_To_Anki] Send to ANKI complete!");
             }
         );
@@ -455,10 +453,6 @@
 
     function SendMessageToBackGround(text)
     {
-        // send sucess message to background
-        chrome.runtime.sendMessage({
-            message: text
-        });
         console.log(text);
     }
     function ShowSucessMessage(message)
