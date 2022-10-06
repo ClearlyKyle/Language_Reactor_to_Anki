@@ -213,12 +213,12 @@
         word - top of the dictionary 
         basic_translation - this is under the word at the top
         extra_translation - this is all the other tranlations in the box bellow
-        sentence - sentence the word is from
+        sentence - sentence the word is from Tatoeba
         */
         const word = document.getElementsByClassName('lln-dict-contextual')[0].children[0].innerText;
         const basic_translation = document.getElementsByClassName('lln-dict-contextual')[0].children[2].innerText;
         const extra_definitions = document.getElementsByClassName('dictionary-meanings')[0].innerText;
-        const example_sentences = document.getElementsByClassName('lln-word-examples')[1].innerText;
+        const example_sentences = document.getElementsByClassName('lln-word-examples')[1].innerText; // Examples: Tatoeba
 
         if (document.getElementsByClassName('anki-word').length)
         {
