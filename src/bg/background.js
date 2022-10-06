@@ -4,12 +4,6 @@ function Add_onUpdate()
 {
     console.log("----- [background.js] Add_onUpdate");
 
-    chrome.runtime.onMessage.addListener(function (request, sender, sendResponse)
-    {
-        console.log(request.message)
-        return true; // Inform Chrome that we will make a delayed sendResponse
-    });
-
     chrome.tabs.onUpdated.addListener(
         function (tabId, changeInfo, tab)
         {
@@ -35,15 +29,12 @@ function Add_onUpdate()
                         }
                     }
                     console.log("Sending message: " + message)
-                    chrome.tabs.sendMessage(tab.id, {
-                        mode: message
-                    });
+                    chrome.tabs.sendMessage(tab.id, { mode: message });
                 }
             }
+            return true;
         }
     );
-
-    return true;
 }
 
 Add_onUpdate()
