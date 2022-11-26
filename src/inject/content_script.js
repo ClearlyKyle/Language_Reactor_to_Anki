@@ -50,14 +50,21 @@
         // Wait for the 'main' tag to be ready
         let watch_main = setInterval(() =>
         {
-            if (document.getElementsByTagName('main')[0].children.length > 1)
+            if (document.getElementsByTagName('main')[0] && document.getElementsByTagName('main')[0].children.length > 1)
             {
                 clearInterval(watch_main)
                 console.log("Main is ready!")
 
                 // add an 'onClick' event to the "READ/EDIT" toggle button
+                let wait_for_edit_read_button = setInterval(function ()
+                {
+                    console.log("Waiting for edit read button and GO TO READER MODE")
                 let read_edit_mode_switch = document.getElementsByClassName('MuiSwitch-input')[0];
-                let go_to_read_mode_button = document.getElementsByClassName('MuiButton-containedPrimary')[0];
+                    let go_to_read_mode_button = document.getElementsByClassName('css-dkytfr')[0];
+
+                    if (read_edit_mode_switch && go_to_read_mode_button)
+                    {
+                        clearInterval(wait_for_edit_read_button);
 
                 read_edit_mode_switch.onclick = function ()
                 {
@@ -75,7 +82,7 @@
 
                         let wait_for_read_mode_button = setInterval(() =>
                         {
-                            let go_to_read_mode_button = document.getElementsByClassName('MuiButton-containedPrimary')[0];
+                                    let go_to_read_mode_button = document.getElementsByClassName('css-dkytfr')[0];
                             SendMessageToBackGround("waiting for read_mode_button")
                             if (go_to_read_mode_button)
                             {
@@ -98,6 +105,8 @@
                     SendMessageToBackGround("[MODE] READ MODE BOTTOM BUTTOM!")
                     OnReadMode();
                 }
+                    }
+                }, 100);
             }
         }, 100);
     }
