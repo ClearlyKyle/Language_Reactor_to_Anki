@@ -228,8 +228,8 @@
         */
         const word = document.getElementsByClassName('lln-dict-contextual')[0].children[0].innerText;
         const basic_translation = document.getElementsByClassName('lln-dict-contextual')[0].children[2].innerText;
-        const extra_definitions = document.getElementsByClassName('dictionary-item')[0].innerText;
-        const example_sentences = document.getElementsByClassName('lln-word-examples')[1].innerText; // Examples: Tatoeba
+        const extra_definitions = document.getElementsByClassName('dictionary-item')[0].innerText.replaceAll('\n', '<br>');
+        const example_sentences = document.getElementsByClassName('lln-word-examples')[1].innerText.replaceAll('\n', '<br>'); // Examples: Tatoeba
 
         var sentence = ""
         var sentence_translation = ""
