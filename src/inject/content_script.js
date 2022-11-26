@@ -59,52 +59,52 @@
                 let wait_for_edit_read_button = setInterval(function ()
                 {
                     console.log("Waiting for edit read button and GO TO READER MODE")
-                let read_edit_mode_switch = document.getElementsByClassName('MuiSwitch-input')[0];
+                    let read_edit_mode_switch = document.getElementsByClassName('MuiSwitch-input')[0];
                     let go_to_read_mode_button = document.getElementsByClassName('css-dkytfr')[0];
 
                     if (read_edit_mode_switch && go_to_read_mode_button)
                     {
                         clearInterval(wait_for_edit_read_button);
 
-                read_edit_mode_switch.onclick = function ()
-                {
-                    if (read_edit_mode_switch.checked)
-                    { // READ mode is selected
-                        SendMessageToBackGround("[MODE] READ MODE!")
+                        read_edit_mode_switch.onclick = function ()
+                        {
+                            if (read_edit_mode_switch.checked)
+                            { // READ mode is selected
+                                SendMessageToBackGround("[MODE] READ MODE!")
 
-                        OnReadMode();
-                    }
-                    else
-                    { // EDIT mode is selected
-                        SendMessageToBackGround("[MODE] EDIT MODE!")
+                                OnReadMode();
+                            }
+                            else
+                            { // EDIT mode is selected
+                                SendMessageToBackGround("[MODE] EDIT MODE!")
+
+                                // This is bellow the input box for the text
+
+                                let wait_for_read_mode_button = setInterval(() =>
+                                {
+                                    let go_to_read_mode_button = document.getElementsByClassName('css-dkytfr')[0];
+                                    SendMessageToBackGround("waiting for read_mode_button")
+                                    if (go_to_read_mode_button)
+                                    {
+                                        clearInterval(wait_for_read_mode_button)
+                                        SendMessageToBackGround("adding onlcick for read_mode_button")
+
+                                        go_to_read_mode_button.onclick = function ()
+                                        {
+                                            SendMessageToBackGround("[MODE] READ MODE!")
+                                            OnReadMode();
+                                        }
+                                    }
+                                }, 100);
+                            }
+                        }
 
                         // This is bellow the input box for the text
-
-                        let wait_for_read_mode_button = setInterval(() =>
+                        go_to_read_mode_button.onclick = function ()
                         {
-                                    let go_to_read_mode_button = document.getElementsByClassName('css-dkytfr')[0];
-                            SendMessageToBackGround("waiting for read_mode_button")
-                            if (go_to_read_mode_button)
-                            {
-                                clearInterval(wait_for_read_mode_button)
-                                SendMessageToBackGround("adding onlcick for read_mode_button")
-
-                                go_to_read_mode_button.onclick = function ()
-                                {
-                                    SendMessageToBackGround("[MODE] READ MODE!")
-                                    OnReadMode();
-                                }
-                            }
-                        }, 100);
-                    }
-                }
-
-                // This is bellow the input box for the text
-                go_to_read_mode_button.onclick = function ()
-                {
-                    SendMessageToBackGround("[MODE] READ MODE BOTTOM BUTTOM!")
-                    OnReadMode();
-                }
+                            SendMessageToBackGround("[MODE] READ MODE BOTTOM BUTTOM!")
+                            OnReadMode();
+                        }
                     }
                 }, 100);
             }
@@ -231,11 +231,15 @@
         const extra_definitions = document.getElementsByClassName('dictionary-meanings')[0].innerText;
         const example_sentences = document.getElementsByClassName('lln-word-examples')[1].innerText; // Examples: Tatoeba
 
-        if (document.getElementsByClassName('anki-word').length)
+        var sentence = ""
+        var sentence_translation = ""
+        const anki_word_location = document.querySelectorAll('[name="anki-word"]')[0]
+
+        if (anki_word_location)
         {
             // make the word we are saving appear BOLD and lowercase in the sentence
-            var sentence = document.getElementsByClassName('anki-word')[0].parentNode.innerText;
-            var sentence_translation = document.getElementsByClassName('anki-word')[0].parentNode.parentElement.parentElement.childNodes[1].children[0].innerText;
+            sentence = anki_word_location.parentNode.innerText;
+            var sentence_translation = anki_word_location.parentElement.parentElement.parentElement.parentElement.children[1].innerText;
 
             // this regex might not word for all languages :(
             sentence = sentence.replace(new RegExp(`(?<![\u0400-\u04ff])${word}(?![\u0400-\u04ff])`, 'gi'), "<b>" + word + "</b>");
@@ -272,21 +276,15 @@
 
                 Add_Anki_Button();
 
-                if (document.getElementsByClassName('anki-word').length)
-                {
-                    // turn what ever word currently has the "anki-word" class name
-                    document.getElementsByClassName('anki-word')[0].classList.toggle("anki-word")
+                if (document.querySelectorAll('[name="anki-word"]').length)
+                    document.querySelectorAll('[name="anki-word"]')[0].toggleAttribute("name", false)
 
-                    // add classname to current word clicked
-                    event.target.parentNode.classList.add("anki-word")
-                }
-                else
-                {
-                    // if no 'anki-word' exists, then we add it here
+                console.log("toggling name 'anki-word'")
 
-                    // Currently no word has this class name so we add it
-                    event.target.parentNode.classList.add("anki-word")
-                }
+                // add the attribute anki-word so we can find the current sentence the word is in later
+                event.target.parentElement.setAttribute("name", "anki-word");
+
+                //console.log(event.target.parentElement)
             }
         });
 
@@ -296,7 +294,7 @@
     function Send_data_to_ANKI(data)
     {
         SendMessageToBackGround("[Send_data_to_ANKI] Sending to Anki...")
-        SendMessageToBackGround(data)
+        SendMessageToBackGround({ data })
 
         let add_image = false;
         if (window.location.href.includes("video"))
@@ -432,18 +430,16 @@
                             {
                                 console.log("Fetch Return:")
                                 console.log(data)
-                                if (data.result === null)
+                                if (data.result == null)
                                 {
                                     // https://jsfiddle.net/2qasgcfd/3/
                                     // https://github.com/apvarun/toastify-js
-                                    ShowErrorMessage("Error! " + error);
+                                    ShowErrorMessage(data.error)
                                     return
                                 }
-                                else
-                                {
-                                    /* show sucess message */
-                                    ShowSucessMessage("Sucessfully added to ANKI");
-                                }
+                                /* show sucess message */
+                                ShowSucessMessage("Sucessfully added to ANKI");
+
                             })
                             .catch((error) =>
                             {
