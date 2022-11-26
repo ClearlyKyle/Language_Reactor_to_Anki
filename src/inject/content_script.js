@@ -335,8 +335,6 @@
                 console.log("Deck Name: ", model)
                 console.log("Model Name: ", deck)
 
-                console.log(fields)
-
                 if (add_image)
                 {
                     var fields = {
@@ -367,10 +365,14 @@
                                             "modelName": model,
                                             "deckName": deck,
                                             "fields": fields,
-                                            "tags": ["languagereactor_anki"]
-                                        }
+                                            "tags": ["languagereactor_anki"],
+                                            "options": {
+                                                "allowDuplicate": true,
+                                            }
+                                        },
+
                                     }
-                                }
+                                },
                             ]
                         }
                     };
@@ -398,8 +400,11 @@
                                             "modelName": model,
                                             "deckName": deck,
                                             "fields": fields,
-                                            "tags": ["languagereactor_anki"]
-                                        }
+                                            "tags": ["languagereactor_anki"],
+                                            "options": {
+                                                "allowDuplicate": true,
+                                            }
+                                        },
                                     }
                                 }
                             ]
@@ -407,8 +412,9 @@
                     };
                 }
 
+                console.log({ fields })
 
-                var permission_data = {
+                const permission_data = {
                     "action": "requestPermission",
                     "version": 6,
                 };
@@ -428,28 +434,22 @@
                             .then((res) => res.json())
                             .then((data) =>
                             {
-                                console.log("Fetch Return:")
-                                console.log(data)
-                                if (data.result == null)
+                                console.log("Fetch Return from anki-connect:", data)
+                                if (data[0].error)
                                 {
-                                    // https://jsfiddle.net/2qasgcfd/3/
-                                    // https://github.com/apvarun/toastify-js
-                                    ShowErrorMessage(data.error)
-                                    return
+                                    ShowErrorMessage(data[0].error)
+                                } else
+                                {
+                                    ShowSucessMessage("Sucessfully added to ANKI"); /* show sucess message */
                                 }
-                                /* show sucess message */
-                                ShowSucessMessage("Sucessfully added to ANKI");
-
                             })
                             .catch((error) =>
                             {
-                                /* show error message */
-                                ShowErrorMessage("Error! " + error);
+                                ShowErrorMessage("Error! " + error); /* show error message */
                             })
                     }).catch((error) =>
                     {
-                        /* show error message */
-                        ShowErrorMessage("Error! " + error);
+                        ShowErrorMessage("Error! " + error); /* show error message */
                     });
                 SendMessageToBackGround("[LLW_Send_Data_To_Anki] Send to ANKI complete!");
             }
@@ -482,7 +482,7 @@
                 background: "red",
             }
         }).showToast();
-        //console.log(message);
+        console.log(message);
         SendMessageToBackGround(message);
     }
 })();
