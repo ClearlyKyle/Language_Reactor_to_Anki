@@ -239,7 +239,12 @@
         {
             // make the word we are saving appear BOLD and lowercase in the sentence
             sentence = anki_word_location.parentNode.innerText;
-            var sentence_translation = anki_word_location.parentElement.parentElement.parentElement.parentElement.children[1].innerText;
+
+            // this is the sentence translated, when reading in two column mode, its on the right
+            const translation_sentence_location = anki_word_location.parentElement.parentElement.parentElement.parentElement.children[1];
+
+            if(translation_sentence_location)
+                sentence_translation = translation_sentence_location.innerText;
 
             // this regex might not word for all languages :(
             sentence = sentence.replace(new RegExp(`(?<![\u0400-\u04ff])${word}(?![\u0400-\u04ff])`, 'gi'), "<b>" + word + "</b>");
