@@ -16,7 +16,7 @@ Currently only tested with Russian texts.
 Click a word to bring up the definition popup on the right hand side of the screen.
 Clicking the `Anki` button, this will send the relevant data to the fields set in settings to Anki and create a new card.
 
-![reading-mode-screenshot](https://github.com/ClearlyKyle/Language_Reactor_to_Anki/master/screenshots/reading_example.png)
+![reading-mode-screenshot](https://github.com/ClearlyKyle/Language_Reactor_to_Anki/blob/master/screenshots/reading_example.png)
 
 ## Settings
 
@@ -32,12 +32,12 @@ Exported data fields:
 
 Settings allow you to choose which fields are filled with what data. A blank options means that data is skipped
 
-![settings-screenshot](https://github.com/ClearlyKyle/Language_Reactor_to_Anki/master/screenshots/settings.png)
+![settings-screenshot](https://github.com/ClearlyKyle/Language_Reactor_to_Anki/blob/master/screenshots/settings.png)
 
 ## Example card
 
-Front of card
-![card-front-screenshot](https://github.com/ClearlyKyle/Language_Reactor_to_Anki/master/screenshots/example_card_front.png)
+Front of card<br/>
+![card-front-screenshot](https://github.com/ClearlyKyle/Language_Reactor_to_Anki/blob/master/screenshots/example_card_front.png)
 
-Back of card
-![card-back-screenshot](https://github.com/ClearlyKyle/Language_Reactor_to_Anki/master/screenshots/example_card_back.png)
+Back of card<br/>
+![card-back-screenshot](https://github.com/ClearlyKyle/Language_Reactor_to_Anki/blob/master/screenshots/example_card_back.png)
