@@ -3,250 +3,152 @@
     /* This runs on all "youtube.com/watch" web pages */
     console.log("----- [content_script.js] LOADED");
 
+    function Observe_Dictionary()
+    {
+        const observer = new MutationObserver(function (mutationsList, observer)
+        {
+            console.log("DICTIONARY OBSERVER CALLED")
+            for (const mutation of mutationsList)
+            {
+                if (mutation.target.className === 'lln-full-dict')
+                {
+                    const list_of_dicts = document.getElementsByClassName('lln-external-dicts-container')[0];
+
+                    const anki_button = list_of_dicts.getElementsByClassName('anki-btn');
+                    if (anki_button.length === 0)
+                        Add_Anki_Button();
+
+                    break;
+                }
+            }
+        });
+
+        // Start observing mutations in the document
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+    }
+
     chrome.runtime.onMessage.addListener(
         function (request, sender, sendResponse)
         {
             // listen for messages sent from background.js
             SendMessageToBackGround("[Requested Mode] " + request.mode) // new url is now in content scripts!
-
-            if (request.mode == "text")
-            {
-                SendMessageToBackGround("We are using the READER");
-                Reactor_Reader_Mode();
-            }
-            else if (request.mode == "player")
-            {
-                SendMessageToBackGround("We are using the PLAYER");
-                Reactor_Player_Mode();
-            }
-            else if (request.mode == "video")
-            {
-                SendMessageToBackGround("We are using the VIDEO/TURTLE");
-
-                console.log(window.location.pathname.split('/').length)
-
-                let loop_for_video = setInterval(() =>
-                {
-                    console.log("Looking for video...")
-                    if (document.querySelector('video'))
-                    {
-                        document.querySelector('video').setAttribute("crossOrigin", "anonymous")
-                        clearInterval(loop_for_video)
-                    }
-                }, 0);
-
-                if (window.location.pathname.split('/').length > 4)
-                {
-                    Reactor_Video_Mode();
-                }
-            }
+            Observe_Dictionary();
         }
     );
 
-    function Reactor_Reader_Mode()
+    function Capture_Video_Screenshot(video_element)
     {
-        SendMessageToBackGround("Text reading mode");
+        if (!video_element)
+            return null; // Is this ok?
 
-        // Wait for the 'main' tag to be ready
-        let watch_main = setInterval(() =>
-        {
-            if (document.getElementsByTagName('main')[0] && document.getElementsByTagName('main')[0].children.length > 1)
-            {
-                clearInterval(watch_main)
-                console.log("Main is ready!")
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
 
-                // add an 'onClick' event to the "READ/EDIT" toggle button
-                let wait_for_edit_read_button = setInterval(function ()
-                {
-                    console.log("Waiting for edit read button and GO TO READER MODE")
-                    let read_edit_mode_switch = document.getElementsByClassName('MuiSwitch-input')[0];
-                    let go_to_read_mode_button = document.getElementsByClassName('css-dkytfr')[0];
+        // Set the canvas dimensions to match the video element
+        canvas.width = video_element.videoWidth;
+        canvas.height = video_element.videoHeight;
 
-                    if (read_edit_mode_switch && go_to_read_mode_button)
-                    {
-                        clearInterval(wait_for_edit_read_button);
+        // Draw the current frame of the video onto the canvas
+        context.drawImage(video_element, 0, 0, canvas.width, canvas.height);
 
-                        read_edit_mode_switch.onclick = function ()
-                        {
-                            if (read_edit_mode_switch.checked)
-                            { // READ mode is selected
-                                SendMessageToBackGround("[MODE] READ MODE!")
+        // Get the screenshot as a data URL
+        const screenshot_data_url = canvas.toDataURL('image/png');
 
-                                OnReadMode();
-                            }
-                            else
-                            { // EDIT mode is selected
-                                SendMessageToBackGround("[MODE] EDIT MODE!")
-
-                                // This is bellow the input box for the text
-
-                                let wait_for_read_mode_button = setInterval(() =>
-                                {
-                                    let go_to_read_mode_button = document.getElementsByClassName('css-dkytfr')[0];
-                                    SendMessageToBackGround("waiting for read_mode_button")
-                                    if (go_to_read_mode_button)
-                                    {
-                                        clearInterval(wait_for_read_mode_button)
-                                        SendMessageToBackGround("adding onlcick for read_mode_button")
-
-                                        go_to_read_mode_button.onclick = function ()
-                                        {
-                                            SendMessageToBackGround("[MODE] READ MODE!")
-                                            OnReadMode();
-                                        }
-                                    }
-                                }, 100);
-                            }
-                        }
-
-                        // This is bellow the input box for the text
-                        go_to_read_mode_button.onclick = function ()
-                        {
-                            SendMessageToBackGround("[MODE] READ MODE BOTTOM BUTTOM!")
-                            OnReadMode();
-                        }
-                    }
-                }, 100);
-            }
-        }, 100);
+        //console.log(screenshot_data_url);
+        return screenshot_data_url;
     }
 
-    function Reactor_Player_Mode()
+    function Get_Screen_Shot_If_We_Are_On_A_Video_Page()
     {
-        SendMessageToBackGround("Player Mode")
-    }
+        const currentPage = window.location.pathname;
 
-    function Reactor_Video_Mode()
-    {
-        SendMessageToBackGround("Video/Turtle Mode")
-
-        Add_Dictionary_Observer();
-        Add_On_Click_To_All_Words();
-
-        if (document.getElementsByClassName('anki-btn').length == 0)
+        if (currentPage === '/player')
         {
-            SendMessageToBackGround("Add Anki Button")
-            Add_Anki_Button();
+            console.log("Video Player");
+            var video_element = document.querySelector('#plyr_video');
+            // TODO : Send this screenshot to Anki
+        } else if (currentPage.includes('/video'))
+        {
+            var video_element = document.querySelector('video');
+            console.log("TutleTube")
         }
-    }
-
-    function OnReadMode()
-    {
-        // When switching to READ mode, the page takes some time to load all the text, we set
-        //  an interval and wait for this to be complete...
-        let wait_for_words_to_be_ready = setInterval(function ()
-        {
-            // wait for words to be ready to READ
-            console.log("waiting for words...")
-
-            // word in text = class="dc-down dc-hover dc-lang-ru dc-orig"
-            // word in dict =        dc-down dc-hover dc-lang-ru dc-orig
-
-            // This length will be 1 until the sentences are loaded
-            const reading_mode = document.getElementsByTagName('main')[0].childNodes[1].childNodes[1].childNodes[0].children[0].children[0].children.length;
-            if (reading_mode > 1)
-            {
-                clearInterval(wait_for_words_to_be_ready);
-                console.log("WOOHOO WE ARE READY TO READ!!")
-
-                if (typeof document.getElementsByClassName('lln-word')[0].onclick != 'function')
-                    Add_On_Click_To_All_Words(); // add an 'onClick' event to every word!
-
-                Add_Dictionary_Observer();
-            }
-        }, 100);
+        console.log(video_element);
+        return Capture_Video_Screenshot(video_element);
     }
 
     function Add_Anki_Button()
     {
-        SendMessageToBackGround("Add Anki button to side dictionary")
+        const btn_location = document.getElementsByClassName('lln-external-dicts-container')[0];
 
-        // sometimes the location we want to put the button, isn't quite ready, so we wait a little...
-        let wait_for_button_location_to_be_ready = setInterval(function ()
+        if (btn_location)
         {
-            const btn_location = document.getElementsByClassName('lln-external-dicts-container')[0];
-
-            if (btn_location)
+            if (document.getElementsByClassName('anki-btn')[0])
             {
-                clearInterval(wait_for_button_location_to_be_ready);
-
-                if (document.getElementsByClassName('anki-btn')[0])
-                {
-                    SendMessageToBackGround("Anki button alreay exists so dont add another")
-                    return;
-                }
-
-                /* create Anki Button */
-                let anki_div = document.createElement("div");
-                anki_div.className = "anki-btn lln-external-dict-btn tippy";
-                anki_div.innerHTML = "Anki";
-                anki_div.setAttribute("data-tippy-content", "Send to Anki");
-
-                anki_div.onclick = Handle_Side_Bar_Dictionary;
-
-                btn_location.appendChild(anki_div);
+                SendMessageToBackGround("Anki button alreay exists so dont add another")
+                return;
             }
-        }, 100);
-    }
 
-    function Add_Dictionary_Observer()
-    {
-        var dict_wrap_observer = new MutationObserver(function (mutations)
-        {
-            console.log("mutation : dict_wrap_observer")
-            // possible loss of Anki button after selecting a word with no transaltion 
-            if (document.getElementsByClassName('MuiDrawer-paperAnchorRight')[0].length)
-            {
-                console.log(document.getElementsByClassName('MuiDrawer-paperAnchorRight')[0].innerText)
-            }
-            if (document.getElementsByClassName('MuiDrawer-paperAnchorRight')[0].style.visibility != 'hidden')
-            {
-                SendMessageToBackGround("Dictionary is visible");
+            /* create Anki Button */
+            let anki_div = document.createElement("div");
+            anki_div.className = "anki-btn lln-external-dict-btn tippy";
+            anki_div.innerHTML = "Anki";
+            anki_div.setAttribute("data-tippy-content", "Send to Anki");
 
-                //Add_Anki_Button();
-            }
-            else
-            {
-                SendMessageToBackGround("Dictionary is hidden");
-            }
-        });
-        dict_wrap_observer.observe(document.getElementsByClassName('MuiDrawer-paperAnchorRight')[0],
-            {
-                attributes: true,
-            }
-        );
+            anki_div.onclick = Handle_Side_Bar_Dictionary;
+
+            btn_location.appendChild(anki_div);
+        }
     }
 
     function Handle_Side_Bar_Dictionary()
     {
-        SendMessageToBackGround("[Handle_Subtitle_Dictionary] Sending side bar dictionary informaiton to ANKI...")
+        SendMessageToBackGround("[Handle_Subtitle_Dictionary] Get Sidebar Dictionary Information...")
+
+        const screenshot = Get_Screen_Shot_If_We_Are_On_A_Video_Page();
+        console.log(screenshot);
+
         /*
+        root_dictionary - the actual dictionary panel on the right
         word - top of the dictionary 
         basic_translation - this is under the word at the top
         extra_translation - this is all the other tranlations in the box bellow
         sentence - sentence the word is from Tatoeba
         */
+        const root_dictionary = document.querySelector('.lln-full-dict');
+
         const word = document.getElementsByClassName('lln-dict-contextual')[0].children[0].innerText;
         const basic_translation = document.getElementsByClassName('lln-dict-contextual')[0].children[2].innerText;
-        const extra_definitions = document.getElementsByClassName('dictionary-item')[0].innerText.replaceAll('\n', '<br>');
-        const example_sentences = document.getElementsByClassName('lln-word-examples')[1].innerText.replaceAll('\n', '<br>'); // Examples: Tatoeba
+        const extra_definitions = root_dictionary.childNodes[3].innerText.replaceAll('\n', '<br>');
+        const example_sentences_element = document.getElementsByClassName('lln-word-examples');
+
+        // TODO : fix this for when there are different examples for different parts of speach
+        var example_sentences = "";
+        if (example_sentences_element.length > 1)
+        {
+            // if example_sentences_element is > 1 then we have both Current Text and Tatoeba Examples
+            const tatoeba_examples = example_sentences_element[1].childNodes[1].children;
+            for (let example of tatoeba_examples)
+            {
+                example_sentences = example_sentences + example.innerText.replaceAll('\n', '') + "<br>";
+            }
+        }
 
         var sentence = ""
         var sentence_translation = ""
-        const anki_word_location = document.querySelectorAll('[name="anki-word"]')[0]
+        const anki_word_location = example_sentences_element[0].childNodes[1];
 
         if (anki_word_location)
         {
-            // make the word we are saving appear BOLD and lowercase in the sentence
-            sentence = anki_word_location.parentNode.innerText;
-            var sentence_translation = anki_word_location.parentElement.parentElement.parentElement.parentElement.children[1].innerText;
+            sentence = anki_word_location.innerText;
+            sentence = sentence.replace(/(\r\n|\n|\r)/gm, ""); // Remove the newlines
 
             // this regex might not word for all languages :(
+            // make the word we are saving appear BOLD and lowercase in the sentence
             sentence = sentence.replace(new RegExp(`(?<![\u0400-\u04ff])${word}(?![\u0400-\u04ff])`, 'gi'), "<b>" + word + "</b>");
         }
         else
         {
-            SendMessageToBackGround("[Handle_Side_Bar_Dictionary] Error finding the sentence...")
+            SendMessageToBackGround("[Handle_Side_Bar_Dictionary] Error finding the current sentence...")
         }
 
         var fields = {
@@ -259,36 +161,6 @@
         };
 
         Send_data_to_ANKI(fields);
-    }
-
-    function Add_On_Click_To_All_Words()
-    {
-        SendMessageToBackGround("[Add_On_Click_To_All_Words] Adding all onClick events...")
-
-        //var all_subs = document.querySelectorAll('.lln-word');
-        var all_subs = document.getElementsByTagName('main')[0].childNodes[1].childNodes[1].childNodes[0].children[0].children[0].children;
-        Array.from(all_subs).map((child) =>
-        {
-            child.onclick = function (event)
-            {
-                // attach event listener individually
-                SendMessageToBackGround("CLICKED WORD : " + event.target.innerText)
-
-                Add_Anki_Button();
-
-                if (document.querySelectorAll('[name="anki-word"]').length)
-                    document.querySelectorAll('[name="anki-word"]')[0].toggleAttribute("name", false)
-
-                console.log("toggling name 'anki-word'")
-
-                // add the attribute anki-word so we can find the current sentence the word is in later
-                event.target.parentElement.setAttribute("name", "anki-word");
-
-                //console.log(event.target.parentElement)
-            }
-        });
-
-        SendMessageToBackGround("[Add_On_Click_To_All_Words] all onClick events have been added!")
     }
 
     function Send_data_to_ANKI(data)
@@ -460,6 +332,7 @@
     {
         console.log(text);
     }
+
     function ShowSucessMessage(message)
     {
         // SUCESS
@@ -473,6 +346,7 @@
         //console.log(message);
         SendMessageToBackGround(message);
     }
+
     function ShowErrorMessage(message)
     {
         Toastify({
@@ -485,5 +359,6 @@
         console.log(message);
         SendMessageToBackGround(message);
     }
+
 })();
 
