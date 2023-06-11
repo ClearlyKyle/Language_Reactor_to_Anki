@@ -104,8 +104,9 @@
     {
         SendMessageToBackGround("[Handle_Subtitle_Dictionary] Get Sidebar Dictionary Information...")
 
-        const screenshot = Get_Screen_Shot_If_We_Are_On_A_Video_Page();
-        console.log(screenshot);
+        // TODO : Add screenshot image to Anki cards
+        //const screenshot = Get_Screen_Shot_If_We_Are_On_A_Video_Page();
+        //console.log(screenshot);
 
         /*
         root_dictionary - the actual dictionary panel on the right
@@ -121,15 +122,17 @@
         const extra_definitions = root_dictionary.childNodes[3].innerText.replaceAll('\n', '<br>');
         const example_sentences_element = document.getElementsByClassName('lln-word-examples');
 
-        // TODO : fix this for when there are different examples for different parts of speach
         var example_sentences = "";
         if (example_sentences_element.length > 1)
         {
             // if example_sentences_element is > 1 then we have both Current Text and Tatoeba Examples
-            const tatoeba_examples = example_sentences_element[1].childNodes[1].children;
-            for (let example of tatoeba_examples)
+            const tatoeba_examples = example_sentences_element[1].children;
+            for (let index = 1; index < example_sentences_element[1].children.length; index++)
             {
-                example_sentences = example_sentences + example.innerText.replaceAll('\n', '') + "<br>";
+                const example = tatoeba_examples[index];
+
+                for (let e of example.childNodes)
+                    example_sentences = example_sentences + e.innerText.replaceAll('\n', '') + "<br>";
             }
         }
 
