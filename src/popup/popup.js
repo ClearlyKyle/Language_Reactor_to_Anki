@@ -5,6 +5,7 @@ field names
 const DROPDOWN_ELEMENT_IDS = [
     "ankiFieldWord",
     "ankiSentence",
+    "ankiScreenshot",
     "ankiSentenceTranslation",
     "ankiExampleSentence",
     "ankiBasicTranslation",
@@ -209,6 +210,7 @@ function Setup_Submit_Button()
 
             Save_Dropdown_Option('ankiFieldWord'),
             Save_Dropdown_Option('ankiSentence'),
+            Save_Dropdown_Option('ankiScreenshot'),
             Save_Dropdown_Option('ankiSentenceTranslation'),
             Save_Dropdown_Option('ankiExampleSentence'),
             Save_Dropdown_Option('ankiBasicTranslation'),
