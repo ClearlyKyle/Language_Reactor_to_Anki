@@ -36,6 +36,19 @@
         }
     );
 
+    function _generate_random_string(length)
+    {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        var result = '';
+
+        for (var i = 0; i < length; i++)
+        {
+            const random_index = Math.floor(Math.random() * characters.length);
+            result += characters.charAt(random_index);
+        }
+        return result;
+    }
+
     function Capture_Video_Screenshot(video_element)
     {
         if (!video_element)
@@ -52,10 +65,16 @@
         context.drawImage(video_element, 0, 0, canvas.width, canvas.height);
 
         // Get the screenshot as a data URL
-        const screenshot_data_url = canvas.toDataURL('image/png');
+        let screenshot_data_url = canvas.toDataURL('image/png');
+        screenshot_data_url = screenshot_data_url.replace(/^data:image\/(png|jpg);base64,/, "")
 
-        //console.log(screenshot_data_url);
-        return screenshot_data_url;
+        // make the file name unique to avoid duplicates
+        const file_name = 'Reactor2Anki' + '_' + canvas.width + 'x' + canvas.height + '_' + _generate_random_string(12) + '.png';
+
+        return {
+            "data": screenshot_data_url,
+            "filename": file_name,
+        };
     }
 
     function Get_Screen_Shot_If_We_Are_On_A_Video_Page()
@@ -66,13 +85,17 @@
         {
             console.log("Video Player");
             var video_element = document.querySelector('#plyr_video');
-            // TODO : Send this screenshot to Anki
-        } else if (currentPage.includes('/video'))
-        {
-            var video_element = document.querySelector('video');
-            console.log("TutleTube")
         }
-        console.log(video_element);
+        else if (currentPage.includes('/video'))
+        {
+            console.log("TutleTube")
+            var video_element = document.querySelector('video');
+        }
+        else
+        {
+            return null;
+        }
+
         return Capture_Video_Screenshot(video_element);
     }
 
@@ -105,8 +128,8 @@
         SendMessageToBackGround("[Handle_Subtitle_Dictionary] Get Sidebar Dictionary Information...")
 
         // TODO : Add screenshot image to Anki cards
-        //const screenshot = Get_Screen_Shot_If_We_Are_On_A_Video_Page();
-        //console.log(screenshot);
+        const screenshot = Get_Screen_Shot_If_We_Are_On_A_Video_Page();
+        console.log(screenshot);
 
         /*
         root_dictionary - the actual dictionary panel on the right
@@ -137,7 +160,7 @@
         }
 
         var sentence = ""
-        var sentence_translation = ""
+        var sentence_translation = "" // TODO : Get the sentence translation... if it is there
         const anki_word_location = example_sentences_element[0].childNodes[1];
 
         if (anki_word_location)
@@ -159,6 +182,7 @@
             "basic-translation": basic_translation,
             "extra-translation": extra_definitions,
             "sentence": sentence,
+            "screenshot": screenshot,
             "sentence-translation": sentence_translation,
             "example-sentences": example_sentences,
         };
@@ -172,30 +196,12 @@
         SendMessageToBackGround({ data })
 
         let add_image = false;
-        if (window.location.href.includes("video"))
-        {
-            // We can add a screenshot of the video!
-            var canvas = document.createElement('canvas');
-            var video = document.querySelector('video');
-            var ctx = canvas.getContext('2d');
-
-            // Change the size here
-            canvas.width = 640;
-            canvas.height = 360;
-
-            ctx.drawImage(video, 0, 0, 640, 360);
-
-            var dataURL = canvas.toDataURL("image/png");
-            dataURL = dataURL.replace(/^data:image\/(png|jpg);base64,/, "")
-
-            var imageFilename = 'Langauge_Reactor_' + canvas.width + 'x' + canvas.height + '_' + Math.random().toString(36).substring(7) + '.png';
-
+        if (data["screenshot"])
             add_image = true;
-        }
 
         chrome.storage.local.get(
-            ['ankiDeckNameSelected', 'ankiNoteNameSelected', 'ankiFieldWord', 'ankiSentence', 'ankiSentenceTranslation', 'ankiExampleSentence', 'ankiBasicTranslation', 'ankiExtraTranslation', 'ankiConnectUrl'],
-            ({ ankiDeckNameSelected, ankiNoteNameSelected, ankiFieldWord, ankiSentence, ankiSentenceTranslation, ankiExampleSentence, ankiBasicTranslation, ankiExtraTranslation, ankiConnectUrl }) =>
+            ['ankiDeckNameSelected', 'ankiNoteNameSelected', 'ankiFieldWord', 'ankiSentence', 'ankiScreenshot', 'ankiSentenceTranslation', 'ankiExampleSentence', 'ankiBasicTranslation', 'ankiExtraTranslation', 'ankiConnectUrl'],
+            ({ ankiDeckNameSelected, ankiNoteNameSelected, ankiFieldWord, ankiSentence, ankiScreenshot, ankiSentenceTranslation, ankiExampleSentence, ankiBasicTranslation, ankiExtraTranslation, ankiConnectUrl }) =>
             {
                 url = ankiConnectUrl || 'http://localhost:8765';
                 model = ankiNoteNameSelected || 'Basic';
@@ -203,7 +209,7 @@
 
                 console.log(
                     {
-                        ankiDeckNameSelected, ankiNoteNameSelected, ankiFieldWord, ankiSentence, ankiSentenceTranslation, ankiExampleSentence, ankiBasicTranslation, ankiExtraTranslation, ankiConnectUrl
+                        ankiDeckNameSelected, ankiNoteNameSelected, ankiFieldWord, ankiSentence, ankiScreenshot, ankiSentenceTranslation, ankiExampleSentence, ankiBasicTranslation, ankiExtraTranslation, ankiConnectUrl
                     }
                 )
 
@@ -212,6 +218,9 @@
 
                 if (add_image)
                 {
+                    const image_filename = data['screenshot']['filename'];
+                    const image_data = data['screenshot']['data'];
+
                     var fields = {
                         [ankiFieldWord]: data['word'],
                         [ankiSentence]: data['sentence'],
@@ -219,7 +228,7 @@
                         [ankiBasicTranslation]: data['basic-translation'],
                         [ankiExtraTranslation]: data['extra-translation'],
                         [ankiExampleSentence]: data['example-sentences'],
-                        "Screenshot": '<img src="' + imageFilename + '" />',
+                        [ankiScreenshot]: '<img src="' + image_filename + '" />',
                     };
 
                     var body = {
@@ -228,9 +237,10 @@
                             "actions": [
                                 {
                                     "action": "storeMediaFile",
+                                    "version": 6,
                                     "params": {
-                                        "filename": imageFilename,
-                                        "data": dataURL
+                                        "filename": image_filename,
+                                        "data": image_data
                                     }
                                 },
                                 {
@@ -261,7 +271,7 @@
                         [ankiBasicTranslation]: data['basic-translation'],
                         [ankiExtraTranslation]: data['extra-translation'],
                         [ankiExampleSentence]: data['example-sentences'],
-                        "Screenshot": '',
+                        [ankiScreenshot]: '',
                     };
 
                     var body = {
@@ -287,7 +297,7 @@
                     };
                 }
 
-                console.log({ fields })
+                console.log("Sending field data", { fields })
 
                 const permission_data = {
                     "action": "requestPermission",
