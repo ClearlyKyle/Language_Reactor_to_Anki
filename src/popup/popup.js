@@ -90,6 +90,7 @@ async function Load_ElementID_With_Anki_Data(element_id, action, params = {})
 
         })
         .catch(error => console.error(error)); // Handle any errors
+        // NOTE : src/popup/popup.js:92 (anonymous function), TypeError: Failed to fetch
 }
 
 function Set_Selected_Option(element_id, selectedValue)
@@ -165,8 +166,13 @@ async function Update_Selections_With_Saved_Values()
 {
     Setup_Loading_Data_From_Anki();
 
-    const deck_name = await readLocalStorage("ankiDeckNameSelected");
-    const card_name = await readLocalStorage("ankiNoteNameSelected");
+    const deck_name = await readLocalStorage("ankiDeckNameSelected").catch((error) => {
+        console.error("Error reading deck name:", error);
+    });
+    const card_name = await readLocalStorage("ankiNoteNameSelected").catch((error) => {
+        console.error("Error reading card name:", error);
+    });
+
     console.log(deck_name);
     console.log(card_name);
 
