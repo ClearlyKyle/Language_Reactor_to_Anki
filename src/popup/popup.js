@@ -34,10 +34,6 @@ function Fetch_From_Anki(action, params = {})
                     throw new Error('Request failed');
                 return res.json();
             })
-            .catch(error =>
-            {
-                reject(error); // Reject any error from the first fetch
-            })
             .then(() =>
             {
                 fetch(url, {
@@ -50,7 +46,11 @@ function Fetch_From_Anki(action, params = {})
                         resolve(data.result); // Resolve the final data
                         // This is accessed through the .then()
                     })
-                    .catch(error => reject(error));
+                    .catch(error => console.log("Failed to " + action + ", with params: " + {params}));
+            })
+            .catch(error =>
+            {
+                console.log("Failed to connect to Anki, make sure Anki is open and AnkiConnect is installed");
             });
     });
 }
@@ -87,10 +87,8 @@ async function Load_ElementID_With_Anki_Data(element_id, action, params = {})
             {
                 Add_Options_To_Dropdown(element_id, data);
             }
-
         })
-        .catch(error => console.error(error)); // Handle any errors
-        // NOTE : src/popup/popup.js:92 (anonymous function), TypeError: Failed to fetch
+        .catch(error => console.error("Anki should be open!", error)); 
 }
 
 function Set_Selected_Option(element_id, selectedValue)
@@ -137,11 +135,15 @@ async function Setup_Loading_Data_From_Anki()
     const model_name_dropdown = document.getElementById("ankiNoteNameSelected");
     model_name_dropdown.addEventListener('change', Load_Field_Names);
 
-    await Load_ElementID_With_Anki_Data("ankiDeckNameSelected", "deckNames");
-    await Load_ElementID_With_Anki_Data("ankiNoteNameSelected", "modelNames");
+    Promise.all([
+        Load_ElementID_With_Anki_Data("ankiDeckNameSelected", "deckNames"),
+        Load_ElementID_With_Anki_Data("ankiNoteNameSelected", "modelNames")
+    ])
+    .then(() => console.log("deck name and model name loaded"))
+    .catch(() => console.log("deck name or/and model name field are blank"));
 }
 
-const readLocalStorage = async (key) =>
+const Read_Local_Storage = async (key) =>
 {
     return new Promise((resolve, reject) =>
     {
@@ -166,18 +168,18 @@ async function Update_Selections_With_Saved_Values()
 {
     Setup_Loading_Data_From_Anki();
 
-    const deck_name = await readLocalStorage("ankiDeckNameSelected").catch((error) => {
-        console.error("Error reading deck name:", error);
+    const deck_name = await Read_Local_Storage("ankiDeckNameSelected").catch((error) => {
+        console.log("Error reading deck name");
     });
-    const card_name = await readLocalStorage("ankiNoteNameSelected").catch((error) => {
-        console.error("Error reading card name:", error);
+    const card_name = await Read_Local_Storage("ankiNoteNameSelected").catch((error) => {
+        console.log("Error reading card name");
     });
-
-    console.log(deck_name);
-    console.log(card_name);
 
     if (deck_name && card_name)
     {
+        console.log(deck_name);
+        console.log(card_name);
+
         Set_Selected_Option("ankiDeckNameSelected", deck_name);
         Set_Selected_Option("ankiNoteNameSelected", card_name);
 
@@ -185,12 +187,16 @@ async function Update_Selections_With_Saved_Values()
 
         DROPDOWN_ELEMENT_IDS.forEach((element_id) =>
         {
-            readLocalStorage(element_id).then((item) =>
+            Read_Local_Storage(element_id).then((item) =>
             {
                 if (item)
                     Set_Selected_Option(element_id, item);
             });
         });
+    }
+    else
+    {
+        console.log("Unable to load card and deck name");
     }
 }
 
