@@ -3,11 +3,28 @@
     /* This runs on all "youtube.com/watch" web pages */
     console.log("----- [content_script.js] LOADED");
 
+    let CLICKED_SENTENCE_ELEMENT; // GLOBAL
+
     function Observe_Dictionary()
     {
         const observer = new MutationObserver(function (mutationsList, observer)
         {
             console.log("DICTIONARY OBSERVER CALLED")
+            const sentence_wrap_elements = document.querySelectorAll('.sentence-wrap');
+
+            sentence_wrap_elements.forEach(function (element) {
+              // Check if the element already has the click event listener
+                if (!element.hasAttribute('data-click-listener')) {
+                    element.addEventListener('click', function (event) {
+                        CLICKED_SENTENCE_ELEMENT = event.target.parentElement.parentElement.parentElement.parentElement.parentElement;
+                        console.log('CLICKED_SENTENCE_ELEMENT:', CLICKED_SENTENCE_ELEMENT);
+
+                    });
+                    // Mark the element as having the event listener
+                    element.setAttribute('data-click-listener', 'true');
+                }
+            });
+    
             for (const mutation of mutationsList)
             {
                 if (mutation.target.className === 'lln-full-dict')
@@ -18,6 +35,8 @@
                     if (anki_button.length === 0)
                         Add_Anki_Button();
 
+                    
+                    console.log("break")
                     break;
                 }
             }
@@ -127,7 +146,6 @@
     {
         SendMessageToBackGround("[Handle_Subtitle_Dictionary] Get Sidebar Dictionary Information...")
 
-        // TODO : Add screenshot image to Anki cards
         const screenshot = Get_Screen_Shot_If_We_Are_On_A_Video_Page();
         console.log(screenshot);
 
@@ -159,13 +177,40 @@
             }
         }
 
-        var sentence = ""
-        var sentence_translation = "" // TODO : Get the sentence translation... if it is there
-        const anki_word_location = example_sentences_element[0].childNodes[1];
+        var sentence = "";
+        var sentence_translation = "";
+        //const anki_word_location = example_sentences_element[0].childNodes[1];
+        // Later in your code, you can access the clicked element with the data attribute.
+        const anki_word_location = CLICKED_SENTENCE_ELEMENT;
 
         if (anki_word_location)
         {
-            sentence = anki_word_location.innerText;
+            console.log(anki_word_location);
+
+            // Get sentence
+            const sentence_element = anki_word_location.children[0];
+            if(sentence_element)
+            {
+                sentence = sentence_element.innerText;
+                console.log({sentence})
+            }
+            else
+            {
+                console.log("Cannot get Sentence element")
+            }
+            
+            // Get translated sentence            
+            const translated_sentence_element = anki_word_location.children[1];
+            if(translated_sentence_element)
+            {
+                sentence_translation = translated_sentence_element.innerText;
+                console.log({sentence})
+            }
+            else
+            {
+                console.log("Cannot get Translation Sentence element")
+            }
+            
             sentence = sentence.replace(/(\r\n|\n|\r)/gm, ""); // Remove the newlines
 
             // this regex might not word for all languages :(
@@ -174,7 +219,8 @@
         }
         else
         {
-            SendMessageToBackGround("[Handle_Side_Bar_Dictionary] Error finding the current sentence...")
+            SendMessageToBackGround("[Handle_Side_Bar_Dictionary] Error finding the current sentence...");
+            return;
         }
 
         var fields = {
@@ -348,7 +394,6 @@
 
     function ShowSucessMessage(message)
     {
-        // SUCESS
         Toastify({
             text: message,
             duration: 3000,
@@ -356,8 +401,6 @@
                 background: "light blue",
             }
         }).showToast();
-        //console.log(message);
-        SendMessageToBackGround(message);
     }
 
     function ShowErrorMessage(message)
@@ -369,8 +412,6 @@
                 background: "red",
             }
         }).showToast();
-        console.log(message);
-        SendMessageToBackGround(message);
     }
 
 })();
