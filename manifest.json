@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "languagereactor to Anki",
     "description": "Create Anki cards from sentences on languagereactor",
-    "version": "1.0",
+    "version": "2.0",
     "author": "@clearlykyle",
     "permissions": [
         "storage",
