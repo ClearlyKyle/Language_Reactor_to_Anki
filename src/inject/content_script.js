@@ -50,7 +50,7 @@
             if (search_element)
             {
                 callback(search_element);
-                observer.disconnect(); // Stop observing once the element is found
+                observer.disconnect();
             }
         });
         observer.observe(document.body, { childList: true, subtree: true });
@@ -156,62 +156,6 @@
         }
     }
 
-    function Observe_Dictionary()
-    {
-        const observer = new MutationObserver(function (mutationsList, observer)
-        {
-            console.log("DICTIONARY OBSERVER CALLED")
-            const sentence_wrap_elements = document.querySelectorAll('.sentence-wrap');
-
-            sentence_wrap_elements.forEach(function (element)
-            {
-                if (!element.hasAttribute('data-click-listener'))
-                {
-                    element.addEventListener('click', function (event)
-                    {
-                        CLICKED_SENTENCE_ELEMENT = event.target.parentElement.parentElement.parentElement.parentElement.parentElement;
-                        console.log('CLICKED_SENTENCE_ELEMENT:', CLICKED_SENTENCE_ELEMENT);
-
-                    });
-                    element.setAttribute('data-click-listener', 'true');
-                }
-            });
-
-            for (const mutation of mutationsList)
-            {
-                if (mutation.target.className === 'lln-full-dict')
-                {
-                    const list_of_dicts = document.getElementsByClassName('lln-external-dicts-container')[0];
-
-                    const anki_button = list_of_dicts.getElementsByClassName('anki-btn');
-                    if (anki_button.length === 0)
-                    {
-                        Add_Anki_Button();
-                    }
-
-
-                    console.log("break")
-                    break;
-                }
-            }
-        });
-
-        observer.observe(document.documentElement, { childList: true, subtree: true });
-    }
-
-    //function _generate_random_string(length)
-    //{
-    //    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    //    let result = '';
-
-    //    for (let i = 0; i < length; i++)
-    //    {
-    //        const random_index = Math.floor(Math.random() * characters.length);
-    //        result += characters.charAt(random_index);
-    //    }
-    //    return result;
-    //}
-
     async function Capture_Video_Screenshot(video_element)
     {
         const canvas = document.createElement('canvas');
@@ -230,28 +174,6 @@
 
         return Promise.resolve([image_filename, image_data]);
     }
-
-    //async function Get_Screen_Shot_If_We_Are_On_A_Video_Page()
-    //{
-    //    const currentPage = window.location.pathname;
-
-    //    if (currentPage === '/player')
-    //    {
-    //        console.log("Video Player");
-    //        let video_element = document.querySelector('#plyr_video');
-    //    }
-    //    else if (currentPage.includes('/video'))
-    //    {
-    //        console.log("TutleTube")
-    //        let video_element = document.querySelector('video');
-    //    }
-    //    else
-    //    {
-    //        return null;
-    //    }
-
-    //    return Capture_Video_Screenshot(video_element);
-    //}
 
     function Handle_Side_Bar_Dictionary()
     {
@@ -322,7 +244,6 @@
                 //}
 
                 const root_dictionary = document.getElementsByClassName('lln-full-dict');
-                //const dict_context = document.getElementsByClassName('lln-dict-contextual');
 
                 let selected_word = "";
                 if (root_dictionary.length)
@@ -334,7 +255,7 @@
                     {
                         console.log("Fill ankiFieldWord");
 
-                        card_data[ankiFieldWord] = selected_word;
+                        fields[ankiFieldWord] = selected_word;
                     }
 
                     if (ankiBasicTranslation)
@@ -343,7 +264,7 @@
 
                         const basic_translation = root_dictionary[0].children[0].children[2].innerText;
 
-                        card_data[ankiBasicTranslation] = basic_translation;
+                        fields[ankiBasicTranslation] = basic_translation;
                     }
 
                     if (ankiExtraTranslation)
@@ -352,72 +273,81 @@
 
                         const extra_definitions = root_dictionary[0].children[5].innerText.replaceAll('\n', '<br>');
 
-                        card_data[ankiExtraTranslation] = extra_definitions;
+                        fields[ankiExtraTranslation] = extra_definitions;
                     }
                 }
 
-                //const anki_word_location = CLICKED_SENTENCE_ELEMENT;
-                //if (anki_word_location)
-                //{
-                //    if (ankiSentence)
-                //    {
-                //        console.log("Fill ankiSentence");
+                if (CLICKED_SENTENCE_ELEMENT)
+                {
+                    if (ankiSentence)
+                    {
+                        const sentence_element = CLICKED_SENTENCE_ELEMENT.children[1];
+                        if (sentence_element)
+                        {
+                            if (ankiSentence)
+                            {
+                                console.log("Fill ankiSentence");
 
-                //        const sentence_element = anki_word_location.children[0];
-                //        if (sentence_element)
-                //        {
-                //            sentence = sentence_element.innerText;
-                //            sentence = sentence.replace(/(\r\n|\n|\r)/gm, ""); // Remove the newlines
+                                let sentence = sentence_element.children[0].innerText;
+                                sentence = sentence.replace(/(\r\n|\n|\r)/gm, ""); // Remove the newlines
 
-                //            // this regex might not word for all languages :(
-                //            // make the word we are saving appear BOLD and lowercase in the sentence
-                //            sentence = sentence.replace(new RegExp(`(?<![\u0400-\u04ff])${word}(?![\u0400-\u04ff])`, 'gi'), "<b>" + selected_word + "</b>");
+                                if (selected_word)
+                                {
+                                    // this regex might not word for all languages :(
+                                    // make the word we are saving appear BOLD and lowercase in the sentence
+                                    sentence = sentence.replace(new RegExp(`(?<![\u0400-\u04ff])${selected_word}(?![\u0400-\u04ff])`, 'gi'), "<b>" + selected_word + "</b>");
+                                }
 
-                //            card_data[ankiSentence] = sentence;
+                                fields[ankiSentence] = sentence;
+                            }
 
-                //            console.log(sentence);
-                //        }
-                //    }
+                            if (ankiSentenceTranslation)
+                            {
+                                console.log("Fill ankiSentenceTranslation");
 
-                //    //if (ankiSentenceTranslation)
-                //    //{
-                //    //    console.log("Fill ankiSentenceTranslation");
+                                const sentence_translation = sentence_element.children[1].innerText;
 
-                //    //    const translated_sentence_element = anki_word_location.children[1];
-                //    //    if (translated_sentence_element)
-                //    //    {
-                //    //        sentence_translation = translated_sentence_element.innerText;
+                                fields[ankiSentenceTranslation] = sentence_translation;
+                            }
+                        }
+                    }
+                }
 
-                //    //        card_data[ankiSentenceTranslation] = sentence_translation;
-                //    //    }
-                //    //}
-                //}
+                if (ankiExampleSentence)
+                {
+                    console.log("Fill ankiExampleSentence");
 
-                //if (ankiExampleSentence)
-                //{
-                //    console.log("Fill ankiExampleSentence");
+                    // We are only gathering examples from "Tatoeba",
+                    // when on the video player page, it will have "current" examples that are from the 
+                    // video being watched, we dont want to save them so have to skip over this element
+                    // Possible example order:
+                    //  X   Tatoeba > Saved Items
+                    //  X   Tatoeba
+                    //  X   Current text > Tatoeba > Saved Items
+                    //  X   Current text > Tatoeba
+                    //  X   Current text
 
-                //    // TODO : Add option to switch between Current Text examples and Tatoeba Examples
-                //    const example_sentences_element = document.getElementsByClassName('lln-word-examples');
-                //    if (example_sentences_element.length > 1)
-                //    {
-                //        let example_sentences = "";
-                //        const tatoeba_examples = example_sentences_element[1].children;
-                //        for (let index = 1; index < example_sentences_element[1].children.length; index++)
-                //        {
-                //            const example = tatoeba_examples[index];
+                    const example_sentences_element = document.getElementsByClassName('lln-word-examples');
 
-                //            for (let e of example.childNodes)
-                //            {
-                //                example_sentences = example_sentences + e.innerText.replaceAll('\n', '') + "<br>";
-                //            }
-                //        }
+                    const tatoeba_element = Array.from(example_sentences_element).find(div =>
+                        div.querySelector('a[target="_blank"]')
+                    );
 
-                //        card_data[ankiExampleSentence] = example_sentences;
-                //    }
-                //}
+                    if (tatoeba_element)
+                    {
+                        const tatoeba_element_sentences = tatoeba_element.getElementsByClassName('lln-word-example');
 
-                console.log("Card data to send to Anki : ", card_data);
+                        let example_sentences = "";
+                        for (let index = 0; index < tatoeba_element_sentences.length; index++)
+                        {
+                            const example_element = tatoeba_element_sentences[index].children[1];
+                            example_sentences = example_sentences + example_element.innerText.replaceAll('\n', '') + "<br>";
+                        }
+                        fields[ankiExampleSentence] = example_sentences;
+                    }
+                }
+
+                console.log("Card fields to send to Anki : ", fields);
 
                 const anki_settings = {
                     "deck": ankiDeckNameSelected,
@@ -425,161 +355,106 @@
                     "url": ankiConnectUrl || 'http://localhost:8765',
                 }
 
-                //LLW_Send_Data_To_Anki(anki_settings, card_data, image_data);
+                LLW_Send_Data_To_Anki(anki_settings, fields, screenshot_data);
             }
         );
     }
 
-    //function Send_data_to_ANKI(data)
-    //{
-    //    send_message_to_background("[Send_data_to_ANKI] Sending to Anki...")
-    //    send_message_to_background({ data })
+    function LLW_Send_Data_To_Anki(anki_settings, fields, screenshot_data)
+    {
+        console.log("Destination : ", anki_settings);
 
-    //    let add_image = false;
-    //    if (data["screenshot"])
-    //        add_image = true;
+        if (Object.keys(fields).length === 0)
+        {
+            show_error_message("No fields were set, please set a field in the settings");
+            return;
+        }
 
-    //    chrome.storage.local.get(
-    //        ['ankiDeckNameSelected', 'ankiNoteNameSelected', 'ankiFieldWord', 'ankiSentence', 'ankiScreenshot', 'ankiSentenceTranslation', 'ankiExampleSentence', 'ankiBasicTranslation', 'ankiExtraTranslation', 'ankiConnectUrl'],
-    //        ({ ankiDeckNameSelected, ankiNoteNameSelected, ankiFieldWord, ankiSentence, ankiScreenshot, ankiSentenceTranslation, ankiExampleSentence, ankiBasicTranslation, ankiExtraTranslation, ankiConnectUrl }) =>
-    //        {
-    //            url = ankiConnectUrl || 'http://localhost:8765';
-    //            model = ankiNoteNameSelected || 'Basic';
-    //            deck = ankiDeckNameSelected || 'Default';
+        console.log("fields : ", fields);
 
-    //            console.log(
-    //                {
-    //                    ankiDeckNameSelected, ankiNoteNameSelected, ankiFieldWord, ankiSentence, ankiScreenshot, ankiSentenceTranslation, ankiExampleSentence, ankiBasicTranslation, ankiExtraTranslation, ankiConnectUrl
-    //                }
-    //            )
+        let actions = [];
 
-    //            console.log("Deck Name: ", model)
-    //            console.log("Model Name: ", deck)
+        if (screenshot_data.data)
+        {
+            console.log("Adding image to note :", screenshot_data);
+            actions.push({
+                "action": "storeMediaFile",
+                "params": {
+                    "filename": screenshot_data.filename,
+                    "data": screenshot_data.data
+                }
+            });
+        }
 
-    //            if (add_image)
-    //            {
-    //                const image_filename = data['screenshot']['filename'];
-    //                const image_data = data['screenshot']['data'];
+        actions.push({
+            "action": "addNote",
+            "params": {
+                "note": {
+                    "modelName": anki_settings.note,
+                    "deckName": anki_settings.deck,
+                    "fields": fields,
+                    "tags": ["LLW_to_Anki"],
+                    "options": {
+                        "allowDuplicate": true,
+                    }
+                }
+            }
+        });
 
-    //                let fields = {
-    //                    [ankiFieldWord]: data['word'],
-    //                    [ankiSentence]: data['sentence'],
-    //                    [ankiSentenceTranslation]: data['sentence-translation'],
-    //                    [ankiBasicTranslation]: data['basic-translation'],
-    //                    [ankiExtraTranslation]: data['extra-translation'],
-    //                    [ankiExampleSentence]: data['example-sentences'],
-    //                    [ankiScreenshot]: '<img src="' + image_filename + '" />',
-    //                };
+        console.log("actions : ", actions);
 
-    //                let body = {
-    //                    "action": "multi",
-    //                    "params": {
-    //                        "actions": [
-    //                            {
-    //                                "action": "storeMediaFile",
-    //                                "version": 6,
-    //                                "params": {
-    //                                    "filename": image_filename,
-    //                                    "data": image_data
-    //                                }
-    //                            },
-    //                            {
-    //                                "action": "addNote",
-    //                                "params": {
-    //                                    "note": {
-    //                                        "modelName": model,
-    //                                        "deckName": deck,
-    //                                        "fields": fields,
-    //                                        "tags": ["languagereactor_anki"],
-    //                                        "options": {
-    //                                            "allowDuplicate": true,
-    //                                        }
-    //                                    },
+        const body = {
+            "action": "multi",
+            "params": {
+                "actions": actions
+            }
+        };
 
-    //                                }
-    //                            },
-    //                        ]
-    //                    }
-    //                };
-    //            }
-    //            else
-    //            {
-    //                let fields = {
-    //                    [ankiFieldWord]: data['word'],
-    //                    [ankiSentence]: data['sentence'],
-    //                    [ankiSentenceTranslation]: data['sentence-translation'],
-    //                    [ankiBasicTranslation]: data['basic-translation'],
-    //                    [ankiExtraTranslation]: data['extra-translation'],
-    //                    [ankiExampleSentence]: data['example-sentences'],
-    //                    [ankiScreenshot]: '',
-    //                };
+        console.log("body : ", body);
 
-    //                let body = {
-    //                    "action": "multi",
-    //                    "params": {
-    //                        "actions": [
-    //                            {
-    //                                "action": "addNote",
-    //                                "params": {
-    //                                    "note": {
-    //                                        "modelName": model,
-    //                                        "deckName": deck,
-    //                                        "fields": fields,
-    //                                        "tags": ["languagereactor_anki"],
-    //                                        "options": {
-    //                                            "allowDuplicate": true,
-    //                                        }
-    //                                    },
-    //                                }
-    //                            }
-    //                        ]
-    //                    }
-    //                };
-    //            }
+        const permission_data = '{"action":"requestPermission","version":6}';
 
-    //            console.log("Sending field data", { fields })
+        fetch(anki_settings.url, {
+            method: "POST",
+            body: permission_data,
+        })
+            .then((res) => res.json())
+            .then((data) =>
+            {
+                console.log("Permission fetch return : ", data);
+                fetch(anki_settings.url, {
+                    method: "POST",
+                    body: JSON.stringify(body),
+                })
+                    .then((res) => res.json())
+                    .then((data) =>
+                    {
+                        console.log("Fetch Return : ", data);
+                        let has_error = false;
 
-    //            const permission_data = {
-    //                "action": "requestPermission",
-    //                "version": 6,
-    //            };
+                        data.forEach((response, index) =>
+                        {
+                            if (response.result === null)
+                            {
+                                show_error_message(`Error in response ${index + 1}: ${response.error}`);
+                                has_error = true;
+                            }
+                        });
 
-    //            fetch(url, {
-    //                method: "POST",
-    //                body: JSON.stringify(permission_data),
-    //            })
-    //                .then((res) => res.json())
-    //                .then((data) =>
-    //                {
-    //                    console.log(data);
-    //                    fetch(url, {
-    //                        method: "POST",
-    //                        body: JSON.stringify(body),
-    //                    })
-    //                        .then((res) => res.json())
-    //                        .then((data) =>
-    //                        {
-    //                            console.log("Fetch Return from anki-connect:", data)
-    //                            if (data[0].error)
-    //                            {
-    //                                ShowErrorMessage(data[0].error)
-    //                            } else
-    //                            {
-    //                                ShowSucessMessage("Sucessfully added to ANKI"); /* show sucess message */
-    //                            }
-    //                        })
-    //                        .catch((error) =>
-    //                        {
-    //                            ShowErrorMessage("Error! " + error); /* show error message */
-    //                        })
-    //                }).catch((error) =>
-    //                {
-    //                    ShowErrorMessage("Error! " + error); /* show error message */
-    //                });
-    //            send_message_to_background("[LLW_Send_Data_To_Anki] Send to ANKI complete!");
-    //        }
-    //    );
-    //}
+                        if (!has_error)
+                        {
+                            show_success_message(`Successfully added to ANKI`);
+                        }
+                    })
+                    .catch((error) =>
+                    {
+                        show_error_message("Anki Post Error! " + error);
+                    })
+            }).catch((error) =>
+            {
+                show_error_message("Permission Error, extension doesnt have permission to connect to Anki, check AnkiConnect config 'webCorsOriginList', " + error);
+            });
+    }
 
     function show_success_message(message)
     {
