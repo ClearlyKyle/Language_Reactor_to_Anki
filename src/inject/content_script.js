@@ -110,6 +110,7 @@
                             if (clicked_element && list_element.contains(clicked_element))
                             {
                                 CLICKED_SENTENCE_ELEMENT = clicked_element;
+                                console.log("CLICKED_SENTENCE_ELEMENT", CLICKED_SENTENCE_ELEMENT);
                             }
                         });
                     }
@@ -127,7 +128,79 @@
                 console.log("Element found:", element);
 
                 element.style.border = "2px solid blue";
+
+                // Add the onclick event for subtitles to the right of the video
+                let sentence_list_element_wait = setInterval(() =>
+                {
+                    const list_element = document.querySelector('[data-test-id="virtuoso-item-list"]');
+
+                    if (list_element)
+                    {
+                        clearInterval(sentence_list_element_wait);
+
+                        list_element.addEventListener('click', (event) =>
+                        {
+                            const clicked_element = event.target.closest('.sentence-wrap');
+                            if (clicked_element && list_element.contains(clicked_element))
+                            {
+                                CLICKED_SENTENCE_ELEMENT = clicked_element;
+                                console.log("CLICKED_SENTENCE_ELEMENT", CLICKED_SENTENCE_ELEMENT);
+                            }
+                        });
+                    }
+                }, 100);
             });
+
+            // Add the onclick event for the subtitles under the video and fullscreen mode
+            let under_video_sub_element_wait = setInterval(() =>
+            {
+                const under_video_sub_element = document.getElementsByClassName('bottom-panel')[1]; // under video
+                if (under_video_sub_element)
+                {
+                    clearInterval(under_video_sub_element_wait);
+
+                    const observer = new MutationObserver((mutationsList) =>
+                    {
+                        mutation_found = false;
+                        for (const mutation of mutationsList)
+                        {
+                            if (mutation.addedNodes.length)
+                            {
+                                // If we let the subtitles play, then the element could be unloaded, then reloaded
+                                if (mutation.addedNodes[0].className === "main-translation-wrap")
+                                {
+                                    mutation_found = true;
+                                }
+                            }
+
+                            // Checks for changes in the transaltion part of the subtitles, this will fire multiple times
+                            // due to each word of the subtitle having its own element
+                            if (mutation.target.className === "sentence-view")
+                            {
+                                if (mutation.target.parentElement)
+                                {
+                                    mutation_found = true;
+                                }
+                            }
+
+                            if (mutation_found)
+                            {
+                                const list_element = document.querySelector('[data-test-id="virtuoso-item-list"]');
+                                const play_button_element = list_element.getElementsByClassName('lr-play-btn always-visible')[0];
+
+                                if (play_button_element)
+                                {
+                                    CLICKED_SENTENCE_ELEMENT = play_button_element.parentElement.parentElement;
+                                    break;
+                                }
+                            }
+                        }
+                    });
+                    observer.observe(under_video_sub_element, { childList: true, subtree: true });
+
+                    console.log("Observer added");
+                }
+            }, 100);
 
             VIDEO_PAGE_OBSERVER_SET = true;
         }
@@ -212,36 +285,39 @@
 
                 console.log("[Handle_Subtitle_Dictionary] Get Sidebar Dictionary Information...");
 
-                let card_data = {};
-                let image_data = {};
+                let fields = {};
+                let screenshot_data = {};
 
-                //if (ankiScreenshot)
-                //{
-                //    const screenshot = await Get_Screen_Shot_If_We_Are_On_A_Video_Page();
+                //console.log("TEXT_PAGE_OBSERVER_SET", TEXT_PAGE_OBSERVER_SET);
+                //console.log("VIDEO_PAGE_OBSERVER_SET", VIDEO_PAGE_OBSERVER_SET);
+                //console.log("ankiScreenshot", ankiScreenshot);
 
-                //    let video_element;
-                //    const currentPage = window.location.pathname;
-                //    if (currentPage === '/player')
-                //    {
-                //        video_element = document.querySelector('#plyr_video');
-                //    }
-                //    else if (currentPage.includes('/video'))
-                //    {
-                //        video_element = document.querySelector('video');
-                //    }
+                // Dont do this on a text page
+                if (ankiScreenshot && TEXT_PAGE_OBSERVER_SET)
+                {
+                    // TODO : This only works for the "video-file" mode, and not "youtube" mode
+                    let video_element = null;
+                    if (!VIDEO_PAGE_OBSERVER_SET)
+                    {
+                        video_element = document.getElementsByTagName('video')[0];
+                    }
 
-                //    if (video_element)
-                //    {
-                //        console.log("Fill ankiScreenshot");
+                    console.log("video_element", video_element);
 
-                //        const [image_filename, image_data] = Capture_Video_Screenshot(video_element);
+                    if (video_element)
+                    {
+                        console.log("Fill ankiScreenshot");
 
-                //        image_data['data'] = image_data;
-                //        image_data['filename'] = image_filename;
+                        const [image_filename, image_data] = await Capture_Video_Screenshot(video_element);
 
-                //        card_data[ankiScreenshot] = '<img src="' + image_filename + '" />';
-                //    }
-                //}
+                        screenshot_data['data'] = image_data;
+                        screenshot_data['filename'] = image_filename;
+
+                        //console.log("screenshot_data :", screenshot_data);
+
+                        fields[ankiScreenshot] = '<img src="' + image_filename + '" />';
+                    }
+                }
 
                 const root_dictionary = document.getElementsByClassName('lln-full-dict');
 
@@ -281,6 +357,7 @@
                 {
                     if (ankiSentence)
                     {
+                        console.log("CLICKED_SENTENCE_ELEMENT", CLICKED_SENTENCE_ELEMENT);
                         const sentence_element = CLICKED_SENTENCE_ELEMENT.children[1];
                         if (sentence_element)
                         {
@@ -481,4 +558,3 @@
     }
 
 })();
-
