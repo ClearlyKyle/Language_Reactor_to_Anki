@@ -1,242 +1,283 @@
-/*
-These are the element IDs of the drop downs that relate to 
-field names
-*/
-const DROPDOWN_ELEMENT_IDS = [
-    "ankiFieldWord",
-    "ankiSentence",
-    "ankiScreenshot",
-    "ankiSentenceTranslation",
-    "ankiExampleSentence",
-    "ankiBasicTranslation",
-    "ankiExtraTranslation",
-];
+console.log("----- [background.js] LOADED");
 
-function Fetch_From_Anki(action, params = {})
+//
+// DEBUG MODE
+//
+const CONSOLE_LOGGING = true;
+if (!CONSOLE_LOGGING)
 {
-    const url = 'http://127.0.0.1:8765' || document.getElementById('ankiConnectUrl').value;
-    const version = 6;
-    const permission_data = {
-        "action": "requestPermission",
-        "version": 6,
-    };
-
-    return new Promise((resolve, reject) =>
-    {
-        fetch(url, {
-            method: "POST",
-            body: JSON.stringify(permission_data),
-        })
-            .then((res) =>
-            {
-                // Handle the response from "requestPermission"
-                if (!res.ok)
-                    throw new Error('Request failed');
-                return res.json();
-            })
-            .then(() =>
-            {
-                fetch(url, {
-                    method: 'POST',
-                    body: JSON.stringify({ action, version, params }),
-                })
-                    .then(response => response.json())
-                    .then(data =>
-                    {
-                        resolve(data.result); // Resolve the final data
-                        // This is accessed through the .then()
-                    })
-                    .catch(error => console.log("Failed to " + action + ", with params: " + {params}));
-            })
-            .catch(error =>
-            {
-                console.log("Failed to connect to Anki, make sure Anki is open and AnkiConnect is installed");
-            });
-    });
+    console.log = function () { };
 }
 
-function Add_Options_To_Dropdown(element_id, data)
-{
-    const dropdown = document.getElementById(element_id);
-    dropdown.length = 0; // Reset dropdown
-    data.forEach((item) =>
-    {
-        const option = document.createElement('option');
-        option.value = item;
-        option.text = item;
-        dropdown.appendChild(option);
-    });
-}
+//
+// GLOBALS
+//
+let anki_url = 'http://localhost:8765';
 
-/*
-Here we are loading the list of data (deck names, field names, model names) into a
-dropdown box. Passing in an array of elements saves us doing multiple fetches
-for each field
-
-element_id: can be a single value or an array of element_id's
-*/
-async function Load_ElementID_With_Anki_Data(element_id, action, params = {})
-{
-    return Fetch_From_Anki(action, params)
-        .then((data) =>
-        {
-            if (Array.isArray(element_id))
-            {
-                element_id.forEach((id) => Add_Options_To_Dropdown(id, data));
-            } else
-            {
-                Add_Options_To_Dropdown(element_id, data);
-            }
-        })
-        .catch(error => console.error("Anki should be open!", error)); 
-}
-
-function Set_Selected_Option(element_id, selectedValue)
-{
-    return new Promise((resolve, reject) =>
-    {
-        const dropdown = document.getElementById(element_id);
-
-        let wait_for_dropdown = setInterval(() => // I dont like this timer...
-        {
-            if (dropdown.options.length > 0)
-            {
-                clearInterval(wait_for_dropdown);
-
-                for (let i = 0; i < dropdown.options.length; i++)
-                {
-                    const option = dropdown.options[i];
-                    if (option.value === selectedValue)
-                    {
-                        option.selected = true; // Set the option as selected
-                        return;
-                    }
-                }
-            }
-        });
-        resolve();
-    });
-}
-
-async function Load_Field_Names()
-{
-    const model_name_dropdown = document.getElementById("ankiNoteNameSelected");
-
-    // We will load all the field options with one fetch call, saving doing a fetch for each field
-    if (model_name_dropdown.value)
-        Load_ElementID_With_Anki_Data(DROPDOWN_ELEMENT_IDS, "modelFieldNames", { "modelName": model_name_dropdown.value });
-}
-
-/*
-Load the Deck and Model names to the dropdown boxes
-*/
-async function Setup_Loading_Data_From_Anki()
-{
-    const model_name_dropdown = document.getElementById("ankiNoteNameSelected");
-    model_name_dropdown.addEventListener('change', Load_Field_Names);
-
-    Promise.all([
-        Load_ElementID_With_Anki_Data("ankiDeckNameSelected", "deckNames"),
-        Load_ElementID_With_Anki_Data("ankiNoteNameSelected", "modelNames")
-    ])
-    .then(() => console.log("deck name and model name loaded"))
-    .catch(() => console.log("deck name or/and model name field are blank"));
-}
-
-const Read_Local_Storage = async (key) =>
-{
-    return new Promise((resolve, reject) =>
-    {
-        chrome.storage.local.get([key], function (result)
-        {
-            if (result[key] === undefined)
-                reject();
-            else
-                resolve(result[key]);
-        });
-    });
+// These are the names of the field elements in the html, they must match!
+let g_otherdata = {
+    ankiConnectUrl: '',
+    ankiDeckNameSelected: '',
+    ankiNoteNameSelected: '',
 };
 
-/*
-Using the saved settings for the Deck and Card options, we load the relavant
-Field types and then set the current active dropdown values to the saved Field
+let g_ankiFields = {
+    ankiFieldWord: '',
+    ankiSentence: '',
+    ankiScreenshot: '',
+    ankiSentenceTranslation: '',
+    ankiExampleSentence: '',
+    ankiBasicTranslation: '',
+    ankiExtraTranslation: ''
+};
 
-If there are no saved values then the fields will be blank until a note type is
-selected
-*/
-async function Update_Selections_With_Saved_Values()
+const g_anki_field_keys = Object.keys(g_ankiFields);
+const g_fields_in_storage = [
+    "ankiConnectUrl",
+    "ankiDeckNameSelected",
+    "ankiNoteNameSelected",
+
+    ...g_anki_field_keys,
+];
+
+let g_anki_field_elements = {}; // NOTE : Is it really worth it to pre-fetch all elements? 
+
+// Using strings for the body of our fetch, saves calling: JSON.stringify(body)
+const g_deck_and_model_body = '{"action":"multi","params":{"actions":[{"action":"deckNames"},{"action":"modelNames"}]}}';
+const g_permission_data = '{"action":"requestPermission","version":6}';
+
+//
+// STARTUP
+//
+if (document.readyState === "loading")
 {
-    Setup_Loading_Data_From_Anki();
+    document.addEventListener("DOMContentLoaded", () => init());
+}
+else
+{
+    init();
+}
 
-    const deck_name = await Read_Local_Storage("ankiDeckNameSelected").catch((error) => {
-        console.log("Error reading deck name");
-    });
-    const card_name = await Read_Local_Storage("ankiNoteNameSelected").catch((error) => {
-        console.log("Error reading card name");
-    });
-
-    if (deck_name && card_name)
+function init()
+{
+    for (let i = 0; i < g_anki_field_keys.length; i++)
     {
-        console.log(deck_name);
-        console.log(card_name);
+        g_anki_field_elements[g_anki_field_keys[i]] = document.getElementById(g_anki_field_keys[i]);
+    }
 
-        Set_Selected_Option("ankiDeckNameSelected", deck_name);
-        Set_Selected_Option("ankiNoteNameSelected", card_name);
-
-        await Load_ElementID_With_Anki_Data(DROPDOWN_ELEMENT_IDS, "modelFieldNames", { "modelName": card_name });
-
-        DROPDOWN_ELEMENT_IDS.forEach((element_id) =>
+    const submit_element = document.getElementById('saveAnkiBtn');
+    submit_element.addEventListener('click', (e) =>
+    {
+        // TODO : what if we keep a list of current values, that whenever a dropdown changes, then 
+        // it updates the global value
+        let save_data = {};
+        for (const index in g_fields_in_storage)
         {
-            Read_Local_Storage(element_id).then((item) =>
+            const field_name = g_fields_in_storage[index];
+            const value = document.getElementById(field_name).value;
+
+            console.log(`${index} - ${field_name} = ${value}`);
+
+            save_data[field_name] = value;
+        }
+
+        chrome.storage.local.set(save_data, () =>
+        {
+            if (chrome.runtime.lastError)
             {
-                if (item)
-                    Set_Selected_Option(element_id, item);
-            });
+                alert("Error saving to storage:", chrome.runtime.lastError);
+            }
+            else
+            {
+                alert(`Options saved!`);
+            }
         });
-    }
-    else
-    {
-        console.log("Unable to load card and deck name");
-    }
-}
-
-function Save_Dropdown_Option(element_id)
-{
-    const element = document.getElementById(element_id);
-    chrome.storage.local.set({ [element_id]: element.value });
-
-    console.log("Saving :", element_id, element.value);
-}
-
-function Setup_Submit_Button()
-{
-    const submit_button = document.getElementById('saveAnkiBtn');
-    submit_button.addEventListener('click', (e) =>
-    {
-        //e.preventDefault(); // Prevent default form submission behavior
-
-        console.log("Submit is clicked!")
-        Promise.all([
-            Save_Dropdown_Option('ankiDeckNameSelected'),
-            Save_Dropdown_Option('ankiNoteNameSelected'),
-
-            Save_Dropdown_Option('ankiFieldWord'),
-            Save_Dropdown_Option('ankiSentence'),
-            Save_Dropdown_Option('ankiScreenshot'),
-            Save_Dropdown_Option('ankiSentenceTranslation'),
-            Save_Dropdown_Option('ankiExampleSentence'),
-            Save_Dropdown_Option('ankiBasicTranslation'),
-            Save_Dropdown_Option('ankiExtraTranslation'),
-        ])
-            .then(() => alert(`Options saved!`))
-            .catch(error => alert(`Cannot save options: ${error}`))
     });
 
-    console.log("Setup_Submit_Button")
+    chrome.storage.local.get(["ankiConnectUrl"], ({ ankiConnectUrl }) =>
+    {
+        const url_element = document.getElementById('ankiConnectUrl');
+        url_element.value = anki_url = (ankiConnectUrl || url_element.value);
+
+        fetch(anki_url, {
+            method: "POST",
+            body: g_permission_data,
+        })
+            .then((res) => res.json())
+            .then((data) =>
+            {
+                if (data.error)
+                {
+                    reject(data.error);
+                }
+                else
+                {
+                    Update_Selections_With_Saved_Values();
+                }
+            })
+            .catch(error => alert(`Failed to connect to Anki ${anki_url}, make sure Anki is open and AnkiConnect is installed : ${error}`));
+    });
 }
 
-document.addEventListener('DOMContentLoaded', function ()
+
+//
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+//
+
+function Dropdown_Update()
 {
-    Setup_Submit_Button();
-    Update_Selections_With_Saved_Values();
-});
+
+}
+
+function Fetch_From_Anki(body)
+{
+    return new Promise((resolve, reject) =>
+    {
+        fetch(anki_url, {
+            method: 'POST',
+            body: body,
+        })
+            .then(response => response.json())
+            .then(data =>
+            {
+                if (data.error)
+                    reject(data.error);
+                else
+                    resolve(data);
+            })
+            .catch(error => alert("Failed with body:", body));
+    });
+}
+
+function Add_Options_To_Dropdown(dropdown, data)
+{
+    dropdown.length = 0;
+
+    for (let i = 0; i < data.length; i++)
+    {
+        const option = document.createElement('option');
+        option.value = option.text = data[i];
+        dropdown.add(option);
+    }
+}
+
+function Add_Options_To_Field_Dropdown(element_id, data, saved_value)
+{
+    const dropdown = g_anki_field_elements[element_id];
+
+    dropdown.length = 0;
+
+    for (let i = 0; i < data.length; i++)
+    {
+        const option = document.createElement('option');
+        option.value = option.text = data[i];
+        dropdown.add(option);
+    }
+
+    const blank = document.createElement("option");
+    blank.value = blank.text = "";
+    dropdown.add(blank);
+
+    dropdown.value = saved_value;
+}
+
+function Update_Selections_With_Saved_Values()
+{
+    chrome.storage.local.get(g_fields_in_storage, res =>
+    {
+        for (const key in g_ankiFields)
+        {
+            if (key in res)
+            {
+                g_ankiFields[key] = res[key];
+            }
+        }
+
+        document.getElementById("ankiConnectUrl").value = res.ankiConnectUrl ?
+            res.ankiConnectUrl : 'http://localhost:8765';
+
+        // Frist we need to get all deck names and note types, 
+        // after we get a note type, we can then fetch for all the fields of that note type
+
+        const deck_names_element = document.getElementById("ankiDeckNameSelected");
+        const note_names_element = document.getElementById("ankiNoteNameSelected");
+
+        note_names_element.addEventListener('change', Update_Field_Dropdown);
+
+        Fetch_From_Anki(g_deck_and_model_body)
+            .then((data) =>
+            {
+                if (data.length === 2)
+                {
+                    const [deck_names, note_names] = data;
+
+                    Add_Options_To_Dropdown(deck_names_element, deck_names);
+                    Add_Options_To_Dropdown(note_names_element, note_names);
+
+                    const ankiDeckNameSelected = res.ankiDeckNameSelected;
+                    const ankiNoteNameSelected = res.ankiNoteNameSelected;
+
+                    if (ankiDeckNameSelected)
+                        deck_names_element.value = ankiDeckNameSelected;
+
+                    if (ankiNoteNameSelected)
+                        note_names_element.value = ankiNoteNameSelected;
+
+                    Update_Field_Dropdown();
+                }
+            })
+            .catch(error => console.error("Unable to get deck and model names", error));
+    });
+}
+
+function Update_Field_Dropdown()
+{
+    const note_names_element = document.getElementById("ankiNoteNameSelected");
+
+    const note_field_body = `{"action": "modelFieldNames","params":{"modelName":"${note_names_element.value}"}}`;
+
+    Fetch_From_Anki(note_field_body)
+        .then((data) =>
+        {
+            // NOTE : if we switch to another note type that has the same named field, they will not be reset
+            if (data.length)
+            {
+                const field_data = data;
+                const field_names = g_anki_field_keys;
+
+                for (let i = 0; i < field_names.length; i++)
+                {
+                    const field_name = field_names[i];
+                    console.log(`Dropdown ${field_name}, with set value ${g_ankiFields[field_name]}`);
+                    Add_Options_To_Field_Dropdown(field_name, field_data, g_ankiFields[field_name]);
+                }
+
+                //const template = document.getElementById(field_names[0]);
+                //template.length = 0;
+
+                //for (let i = 0; i < data.length; i++)
+                //{
+                //    const option = document.createElement('option');
+                //    option.value = option.text = data[i];
+                //    template.add(option);
+                //}
+
+                //const blank = document.createElement("option");
+                //blank.value = blank.text = "";
+                //template.add(blank);
+
+                //template.value = g_ankiFields[field_names[0]];
+
+
+                //for (let i = 1; i < field_names.length; i++)
+                //{
+                //    const field_name = field_names[i];
+                //    const dropdown = g_anki_field_elements[field_name];
+
+                //    dropdown.innerHTML = template.innerHTML;
+                //    dropdown.value = g_ankiFields[field_name];
+                //}
+            }
+        })
+        .catch(error => console.error("Unable to model fields", error));
+}
