@@ -23,7 +23,6 @@
         init();
     }
 
-    // Listen for messages from the background script
     chrome.runtime.onMessage.addListener((message, sender, send_response) =>
     {
         if (message.type === "url-changed")
@@ -43,7 +42,6 @@
 
     function wait_for_element(element, callback)
     {
-        console.log(`Adding Observer for: '${element}'`);
         const observer = new MutationObserver((mutations, observer) =>
         {
             const search_element = document.getElementsByClassName(element)[0];
@@ -78,7 +76,7 @@
                     const anki_button = list_of_dicts.getElementsByClassName('anki-btn');
                     if (anki_button.length === 0)
                     {
-                        Add_Anki_Button();
+                        add_anki_button();
                     }
                 }
             });
@@ -93,7 +91,6 @@
             wait_for_element("lri-MediaPlayer_TEXT-wrap", (element) =>
             {
                 TEXT_PAGE_OBSERVER_SET = false;
-                console.log("Element found:", element);
 
                 element.style.border = "2px solid red";
 
@@ -110,7 +107,6 @@
                             if (clicked_element && list_element.contains(clicked_element))
                             {
                                 CLICKED_SENTENCE_ELEMENT = clicked_element;
-                                console.log("CLICKED_SENTENCE_ELEMENT", CLICKED_SENTENCE_ELEMENT);
                             }
                         });
                     }
@@ -125,7 +121,6 @@
             wait_for_element("lri-VideoView-wrap", (element) =>
             {
                 VIDEO_PAGE_OBSERVER_SET = false;
-                console.log("Element found:", element);
 
                 element.style.border = "2px solid blue";
 
@@ -144,7 +139,6 @@
                             if (clicked_element && list_element.contains(clicked_element))
                             {
                                 CLICKED_SENTENCE_ELEMENT = clicked_element;
-                                console.log("CLICKED_SENTENCE_ELEMENT", CLICKED_SENTENCE_ELEMENT);
                             }
                         });
                     }
@@ -197,8 +191,6 @@
                         }
                     });
                     observer.observe(under_video_sub_element, { childList: true, subtree: true });
-
-                    console.log("Observer added");
                 }
             }, 100);
 
@@ -211,25 +203,18 @@
     anki_div.className = "anki-btn lln-external-dict-btn tippy";
     anki_div.innerHTML = "Anki";
     anki_div.setAttribute("data-tippy-content", "Send to Anki");
-    anki_div.onclick = Handle_Side_Bar_Dictionary;
+    anki_div.onclick = handle_side_bar_dictionary;
 
-    function Add_Anki_Button()
+    function add_anki_button()
     {
-        const btn_location = document.getElementsByClassName('lln-external-dicts-container')[0];
-        if (btn_location)
+        if (!document.getElementsByClassName('anki-btn')[0])
         {
-            if (document.getElementsByClassName('anki-btn')[0])
-            {
-                console.log("Anki button alreay exists so dont add another")
-            }
-            else
-            {
-                btn_location.appendChild(anki_div);
-            }
+            const btn_location = document.getElementsByClassName('lln-external-dicts-container')[0];
+            btn_location.appendChild(anki_div);
         }
     }
 
-    async function Capture_Video_Screenshot(video_element)
+    async function capture_video_screenshot(video_element)
     {
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
@@ -248,7 +233,7 @@
         return Promise.resolve([image_filename, image_data]);
     }
 
-    function Handle_Side_Bar_Dictionary()
+    function handle_side_bar_dictionary()
     {
         chrome.storage.local.get(
             [
@@ -308,7 +293,7 @@
                     {
                         console.log("Fill ankiScreenshot");
 
-                        const [image_filename, image_data] = await Capture_Video_Screenshot(video_element);
+                        const [image_filename, image_data] = await capture_video_screenshot(video_element);
 
                         screenshot_data['data'] = image_data;
                         screenshot_data['filename'] = image_filename;
@@ -432,14 +417,14 @@
                     "url": ankiConnectUrl || 'http://localhost:8765',
                 }
 
-                LLW_Send_Data_To_Anki(anki_settings, fields, screenshot_data);
+                send_data_to_anki(anki_settings, fields, screenshot_data);
             }
         );
     }
 
-    function LLW_Send_Data_To_Anki(anki_settings, fields, screenshot_data)
+    function send_data_to_anki(anki_settings, fields, screenshot_data)
     {
-        console.log("Destination : ", anki_settings);
+        console.log("destination : ", anki_settings);
 
         if (Object.keys(fields).length === 0)
         {
@@ -453,7 +438,7 @@
 
         if (screenshot_data.data)
         {
-            console.log("Adding image to note :", screenshot_data);
+            console.log("adding image to note :", screenshot_data);
             actions.push({
                 "action": "storeMediaFile",
                 "params": {
@@ -506,9 +491,7 @@
                     .then((res) => res.json())
                     .then((data) =>
                     {
-                        console.log("Fetch Return : ", data);
                         let has_error = false;
-
                         data.forEach((response, index) =>
                         {
                             if (response.result === null)
