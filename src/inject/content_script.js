@@ -5,7 +5,7 @@
     //
     // DEBUG MODE
     //
-    const CONSOLE_LOGGING = false;
+    const CONSOLE_LOGGING = true;
     if (!CONSOLE_LOGGING)
     {
         console.log = function () { };
@@ -66,20 +66,13 @@
         {
             const observer = new MutationObserver((mutations, observer) =>
             {
-                const search_element = document.getElementsByClassName("lln-full-dict")[0];
-                if (search_element)
+                const list_of_dicts = document.getElementsByClassName('lln-external-dicts-container')[0];
+                if (list_of_dicts)
                 {
-                    console.log("Dictionary is open");
-
-                    const list_of_dicts = document.getElementsByClassName('lln-external-dicts-container')[0];
-
-                    if (list_of_dicts)
+                    const anki_button = list_of_dicts.getElementsByClassName('anki-btn');
+                    if (anki_button.length === 0)
                     {
-                        const anki_button = list_of_dicts.getElementsByClassName('anki-btn');
-                        if (anki_button.length === 0)
-                        {
-                            add_anki_button();
-                        }
+                        add_anki_button();
                     }
                 }
             });
@@ -109,6 +102,7 @@
                             const clicked_element = event.target.closest('.sentence-wrap');
                             if (clicked_element && list_element.contains(clicked_element))
                             {
+                                console.log("CLICKED_SENTENCE_ELEMENT", CLICKED_SENTENCE_ELEMENT);
                                 CLICKED_SENTENCE_ELEMENT = clicked_element;
                             }
                         });
@@ -141,6 +135,7 @@
                             const clicked_element = event.target.closest('.sentence-wrap');
                             if (clicked_element && list_element.contains(clicked_element))
                             {
+                                console.log("CLICKED_SENTENCE_ELEMENT", CLICKED_SENTENCE_ELEMENT);
                                 CLICKED_SENTENCE_ELEMENT = clicked_element;
                             }
                         });
@@ -148,7 +143,8 @@
                 }, 100);
             });
 
-            // Add the onclick event for the subtitles under the video and fullscreen mode
+            // This is the element under the video, it may change in size but from initial testing, it seems
+            // to be consistent with only being clickable when subtitle is visible
             let under_video_sub_element_wait = setInterval(() =>
             {
                 const under_video_sub_element = document.getElementsByClassName('bottom-panel')[1]; // under video
@@ -156,44 +152,30 @@
                 {
                     clearInterval(under_video_sub_element_wait);
 
-                    const observer = new MutationObserver((mutationsList) =>
+                    under_video_sub_element.addEventListener('click', (event) =>
                     {
-                        mutation_found = false;
-                        for (const mutation of mutationsList)
+                        console.log(event);
+
+                        const list_element = document.querySelector('[data-test-id="virtuoso-item-list"]');
+                        if (list_element)
                         {
-                            if (mutation.addedNodes.length)
+                            // Since for any subtitle under the video, the corresponding subtitle in the list to the right
+                            // will match, the play button to listen to the sub is always present, we use this to get 
+                            // the current subtitle and translation
+                            const play_button_element = list_element.getElementsByClassName('lr-play-btn always-visible')[0];
+
+                            if (play_button_element)
                             {
-                                // If we let the subtitles play, then the element could be unloaded, then reloaded
-                                if (mutation.addedNodes[0].className === "main-translation-wrap")
-                                {
-                                    mutation_found = true;
-                                }
+                                console.log("CLICKED_SENTENCE_ELEMENT", CLICKED_SENTENCE_ELEMENT);
+                                CLICKED_SENTENCE_ELEMENT = play_button_element.parentElement.parentElement;
                             }
-
-                            // Checks for changes in the transaltion part of the subtitles, this will fire multiple times
-                            // due to each word of the subtitle having its own element
-                            if (mutation.target.className === "sentence-view")
+                            else // if the play button is out of view, we will use the element under the video
                             {
-                                if (mutation.target.parentElement)
-                                {
-                                    mutation_found = true;
-                                }
-                            }
-
-                            if (mutation_found)
-                            {
-                                const list_element = document.querySelector('[data-test-id="virtuoso-item-list"]');
-                                const play_button_element = list_element.getElementsByClassName('lr-play-btn always-visible')[0];
-
-                                if (play_button_element)
-                                {
-                                    CLICKED_SENTENCE_ELEMENT = play_button_element.parentElement.parentElement;
-                                    break;
-                                }
+                                //under_video_sub_element.
+                                CLICKED_SENTENCE_ELEMENT = under_video_sub_element;
                             }
                         }
                     });
-                    observer.observe(under_video_sub_element, { childList: true, subtree: true });
                 }
             }, 100);
 
@@ -343,38 +325,58 @@
 
                 if (CLICKED_SENTENCE_ELEMENT)
                 {
+                    console.log("CLICKED_SENTENCE_ELEMENT", CLICKED_SENTENCE_ELEMENT);
+
+                    // when right side sub
+                    //      sentence    = sentence_element.getElementsByClassName('sentence-view')[0].innerText;
+                    //      translation = sentence_element.getElementsByClassName('dc-orig')[1].innerText;
+
+                    // when under video
+                    //      sentence    = sentence_element.getElementsByClassName('sentence-view');
+                    //      translation = sentence_element.getElementsByClassName('main-translation-wrap').innerText;
+                    
                     if (ankiSentence)
                     {
-                        console.log("CLICKED_SENTENCE_ELEMENT", CLICKED_SENTENCE_ELEMENT);
-                        const sentence_element = CLICKED_SENTENCE_ELEMENT.children[1];
+                        console.log("Fill ankiSentence");
+
+                        let sentence = '';
+
+                        const sentence_element = CLICKED_SENTENCE_ELEMENT.getElementsByClassName('sentence-view')[0];
                         if (sentence_element)
                         {
-                            if (ankiSentence)
+                            sentence = sentence_element.innerText.replace(/(\r\n|\n|\r)/gm, ""); // Remove the newlines
+
+                            if (selected_word)
                             {
-                                console.log("Fill ankiSentence");
-
-                                let sentence = sentence_element.children[0].innerText;
-                                sentence = sentence.replace(/(\r\n|\n|\r)/gm, ""); // Remove the newlines
-
-                                if (selected_word)
-                                {
-                                    // this regex might not word for all languages :(
-                                    // make the word we are saving appear BOLD and lowercase in the sentence
-                                    sentence = sentence.replace(new RegExp(`(?<![\u0400-\u04ff])${selected_word}(?![\u0400-\u04ff])`, 'gi'), "<b>" + selected_word + "</b>");
-                                }
-
-                                fields[ankiSentence] = sentence;
-                            }
-
-                            if (ankiSentenceTranslation)
-                            {
-                                console.log("Fill ankiSentenceTranslation");
-
-                                const sentence_translation = sentence_element.children[1].innerText;
-
-                                fields[ankiSentenceTranslation] = sentence_translation;
+                                // this regex might not word for all languages :(
+                                // make the word we are saving appear BOLD and lowercase in the sentence
+                                sentence = sentence.replace(new RegExp(`(?<![\u0400-\u04ff])${selected_word}(?![\u0400-\u04ff])`, 'gi'), "<b>" + selected_word + "</b>");
                             }
                         }
+
+                        fields[ankiSentence] = sentence;
+                    }
+
+                    if (ankiSentenceTranslation)
+                    {
+                        console.log("Fill ankiSentenceTranslation");
+
+                        let sentence_translation = '';
+
+                        const translation_wrap = CLICKED_SENTENCE_ELEMENT.getElementsByClassName('main-translation-wrap')[0];
+
+                        if (translation_wrap)
+                        {
+                            console.log("Getting under video translation");
+                            sentence_translation = translation_wrap.innerText;
+                        }
+                        else
+                        {
+                            console.log("Getting right side translation");
+                            sentence_translation = CLICKED_SENTENCE_ELEMENT.children[1].children[1].innerText
+                        }
+
+                        fields[ankiSentenceTranslation] = sentence_translation;
                     }
                 }
 
