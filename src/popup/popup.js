@@ -27,6 +27,7 @@ const anki_element_names_array = [
     "ankiExampleSentence",
     "ankiBasicTranslation",
     "ankiExtraTranslation",
+    "ankiAudio",
 ];
 
 let anki_values = Object.fromEntries(anki_element_names_array.map((key) => [key, ""]));
