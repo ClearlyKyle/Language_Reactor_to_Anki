@@ -429,7 +429,25 @@
                         else
                         {
                             console.log("Getting right side translation");
-                            sentence_translation = CLICKED_SENTENCE_ELEMENT.children[1].children[1].innerText
+
+                            // At the top of the subtitle list, there are 3 modes the subtitles can be viewed in
+
+                            const clicked_sentence_parent_children = RTA_CLICKED_SENTENCE_ELEMENT.parentElement.children;
+
+                            const element_count = clicked_sentence_parent_children.length;
+                            if (element_count === 1)
+                            {
+                                const sentence_elements = clicked_sentence_parent_children[0].children[1].children;
+                                if (sentence_elements.length === 2) // 1 - Sub and translation to the right
+                                {
+                                    sentence_translation = RTA_CLICKED_SENTENCE_ELEMENT.children[1].children[1].innerText
+                                }
+                                // 2 - Sub only - do nothing 
+                            }
+                            else if (element_count === 2)  // 3 - Sub and translation underneath 
+                            {
+                                sentence_translation = clicked_sentence_parent_children[1].innerText
+                            }
                         }
 
                         fields[ankiSentenceTranslation] = sentence_translation;
