@@ -5,15 +5,14 @@
     //
     // DEBUG MODE
     //
+
     const CONSOLE_LOGGING = true;
-    if (!CONSOLE_LOGGING)
-    {
-        console.log = function () { };
-    }
+    if (!CONSOLE_LOGGING) console.log = function () { };
 
     //
     // STARTUP
     //
+
     if (document.readyState === "loading")
     {
         document.addEventListener("DOMContentLoaded", () => init());
@@ -35,10 +34,21 @@
     //
     // GLOBALS
     //
-    let DICTIONARY_OBSERVER_SET = false;
-    let TEXT_PAGE_OBSERVER_SET = false;
-    let VIDEO_PAGE_OBSERVER_SET = false;
-    let CLICKED_SENTENCE_ELEMENT = null;
+    // NOTE : This wont be presist between page loads
+    let rta_screenshot_filenames = [];
+    let rta_audio_filenames = [];
+
+    let RTA_DICTIONARY_OBSERVER_SET = false;
+    let RTA_TEXT_PAGE_OBSERVER_SET = false;
+    let RTA_VIDEO_PAGE_OBSERVER_SET = false;
+    let RTA_CLICKED_SENTENCE_ELEMENT = null;
+
+    /* create Anki Button */
+    const rta_anki_btn = document.createElement("div");
+    rta_anki_btn.className = "rta_anki_btn lln-external-dict-btn tippy";
+    rta_anki_btn.innerHTML = "Anki";
+    rta_anki_btn.setAttribute("data-tippy-content", "Send to Anki");
+    rta_anki_btn.onclick = handle_side_bar_dictionary;
 
     function wait_for_element(element, callback)
     {
@@ -62,31 +72,31 @@
 
     function init()
     {
-        if (!DICTIONARY_OBSERVER_SET)
+        if (!RTA_DICTIONARY_OBSERVER_SET)
         {
-            const observer = new MutationObserver((mutations, observer) =>
+            const observer = new MutationObserver(() =>
             {
                 const list_of_dicts = document.getElementsByClassName('lln-external-dicts-container')[0];
                 if (list_of_dicts)
                 {
-                    const anki_button = list_of_dicts.getElementsByClassName('anki-btn');
-                    if (anki_button.length === 0)
+                    if (!document.getElementsByClassName('rta_anki_btn')[0])
                     {
-                        add_anki_button();
+                        const btn_location = document.getElementsByClassName('lln-external-dicts-container')[0];
+                        if (btn_location) btn_location.appendChild(rta_anki_btn);
                     }
                 }
             });
             // TODO : change from body to better element...
             observer.observe(document.body, { childList: true, subtree: true });
 
-            DICTIONARY_OBSERVER_SET = true;
+            RTA_DICTIONARY_OBSERVER_SET = true;
         }
 
-        if (!TEXT_PAGE_OBSERVER_SET)
+        if (!RTA_TEXT_PAGE_OBSERVER_SET)
         {
             wait_for_element("lri-MediaPlayer_TEXT-wrap", (element) =>
             {
-                TEXT_PAGE_OBSERVER_SET = false;
+                RTA_TEXT_PAGE_OBSERVER_SET = false;
 
                 element.style.border = "2px solid red";
 
@@ -102,22 +112,22 @@
                             const clicked_element = event.target.closest('.sentence-wrap');
                             if (clicked_element && list_element.contains(clicked_element))
                             {
-                                console.log("CLICKED_SENTENCE_ELEMENT", CLICKED_SENTENCE_ELEMENT);
-                                CLICKED_SENTENCE_ELEMENT = clicked_element;
+                                console.log("RTA_CLICKED_SENTENCE_ELEMENT", RTA_CLICKED_SENTENCE_ELEMENT);
+                                RTA_CLICKED_SENTENCE_ELEMENT = clicked_element;
                             }
                         });
                     }
                 }, 100);
             });
 
-            TEXT_PAGE_OBSERVER_SET = true;
+            RTA_TEXT_PAGE_OBSERVER_SET = true;
         }
 
-        if (!VIDEO_PAGE_OBSERVER_SET)
+        if (!RTA_VIDEO_PAGE_OBSERVER_SET)
         {
             wait_for_element("lri-VideoView-wrap", (element) =>
             {
-                VIDEO_PAGE_OBSERVER_SET = false;
+                RTA_VIDEO_PAGE_OBSERVER_SET = false;
 
                 element.style.border = "2px solid blue";
 
@@ -135,8 +145,8 @@
                             const clicked_element = event.target.closest('.sentence-wrap');
                             if (clicked_element && list_element.contains(clicked_element))
                             {
-                                console.log("CLICKED_SENTENCE_ELEMENT", CLICKED_SENTENCE_ELEMENT);
-                                CLICKED_SENTENCE_ELEMENT = clicked_element;
+                                console.log("RTA_CLICKED_SENTENCE_ELEMENT", RTA_CLICKED_SENTENCE_ELEMENT);
+                                RTA_CLICKED_SENTENCE_ELEMENT = clicked_element;
                             }
                         });
                     }
@@ -154,53 +164,30 @@
 
                     under_video_sub_element.addEventListener('click', (event) =>
                     {
-                        console.log(event);
-
-                        const list_element = document.querySelector('[data-test-id="virtuoso-item-list"]');
-                        if (list_element)
-                        {
-                            // Since for any subtitle under the video, the corresponding subtitle in the list to the right
-                            // will match, the play button to listen to the sub is always present, we use this to get 
-                            // the current subtitle and translation
-                            const play_button_element = list_element.getElementsByClassName('lr-play-btn always-visible')[0];
-
-                            if (play_button_element)
-                            {
-                                console.log("CLICKED_SENTENCE_ELEMENT", CLICKED_SENTENCE_ELEMENT);
-                                CLICKED_SENTENCE_ELEMENT = play_button_element.parentElement.parentElement;
-                            }
-                            else // if the play button is out of view, we will use the element under the video
-                            {
-                                //under_video_sub_element.
-                                CLICKED_SENTENCE_ELEMENT = under_video_sub_element;
-                            }
-                        }
+                        RTA_CLICKED_SENTENCE_ELEMENT = under_video_sub_element;
                     });
                 }
             }, 100);
 
-            VIDEO_PAGE_OBSERVER_SET = true;
+            RTA_VIDEO_PAGE_OBSERVER_SET = true;
         }
     }
 
-    /* create Anki Button */
-    const anki_div = document.createElement("div");
-    anki_div.className = "anki-btn lln-external-dict-btn tippy";
-    anki_div.innerHTML = "Anki";
-    anki_div.setAttribute("data-tippy-content", "Send to Anki");
-    anki_div.onclick = handle_side_bar_dictionary;
-
-    function add_anki_button()
+    async function capture_video_screenshot(video_element, video_id)
     {
-        if (!document.getElementsByClassName('anki-btn')[0])
+        const video_current_time = video_element.currentTime;
+
+        const image_filename = `Reactor2Anki_${video_id}_${video_current_time}.png`;
+
+        if (rta_screenshot_filenames.includes(image_filename))
         {
-            const btn_location = document.getElementsByClassName('lln-external-dicts-container')[0];
-            btn_location.appendChild(anki_div);
+            console.log(`${image_filename} is already in the list`);
+            return [image_filename, null];
         }
-    }
 
-    async function capture_video_screenshot(video_element)
-    {
+        rta_screenshot_filenames.push(image_filename);
+        console.log(`${image_filename} added to screenshot files list`);
+
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
 
@@ -211,13 +198,11 @@
         let image_data = canvas.toDataURL('image/png');
         image_data = image_data.replace(/^data:image\/(png|jpg);base64,/, "")
 
-        const video_current_time = video_element.currentTime;
-
-        const image_filename = `Reactor2Anki_${video_current_time}.png`;
 
         return Promise.resolve([image_filename, image_data]);
     }
-    function test_subtitle_jump()
+
+    async function test_subtitle_jump()
     {
         let audio_filename = '';
         let audio_data = null;
@@ -274,10 +259,164 @@
         element_to_start_search_for_subtitle_index.dispatchEvent(play_button_mouse_event);
     }
 
+    async function capture_video_audio(video_element, video_id)
+    {
+        // Possible cases to handle:
+        // 1 - Subtitle under video is visible on the right side, user clicks to add word
+        // 2 - Subttile under video contains word we want and clicked, but subtitles on the right
+        //      has been scrolled down so subtitle under video is not visible on the right
+        // 3 - Scrolled to find a subtitle, then word is clicked to be sent there
+
+        // if (!video_element) alert("No video element!!");
+
+        // TODO : Only works in 'video-file' mode, not in the youtube mode
+        if (window.location.href.includes('video-file'))
+        {
+            let audio_filename = '';
+            let audio_data = null;
+
+            // word was clicked from subtitles on the right
+            let element_to_start_search_for_subtitle_index = RTA_CLICKED_SENTENCE_ELEMENT;
+
+            // word was clicked from subtitle under the video
+            if (RTA_CLICKED_SENTENCE_ELEMENT.className === 'bottom-panel')
+            {
+                // word was clicked from subtitle under the video
+                const jump_to_current_sub_in_right_list = document.querySelector('[data-testid="VerticalAlignCenterIcon"]');
+                if (jump_to_current_sub_in_right_list)
+                {
+                    jump_to_current_sub_in_right_list.parentElement.click()
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+
+                const sentence_element_in_subtitle_list = document.querySelector('.lri-SubsView-wrap .lr-play-btn.always-visible');
+                if (!sentence_element_in_subtitle_list)
+                {
+                    console.warn("We were unable to get the sentence from where the play button is in the subtitle list")
+                }
+                element_to_start_search_for_subtitle_index = sentence_element_in_subtitle_list
+            }
+
+            let data_index_value = 0;
+            let parent_element_to_check = element_to_start_search_for_subtitle_index;
+            while (parent_element_to_check !== null)
+            {
+                if (parent_element_to_check.hasAttribute('data-index'))
+                {
+                    data_index_value = parent_element_to_check.getAttribute('data-index');
+                    console.log('Found data-index:', data_index_value);
+
+                    audio_filename = `Reactor2Anki_${video_id}_${data_index_value}.webm`;
+
+                    if (rta_audio_filenames.includes(data_index_value))
+                    {
+                        console.log(`${audio_filename} is already in the list`);
+                        return [audio_filename, audio_data];
+                    }
+
+                    rta_audio_filenames.push(audio_filename);
+                    console.log(`${audio_filename} added to audio files list`);
+
+                    break;
+                }
+
+                parent_element_to_check = parent_element_to_check.parentElement;
+            }
+
+            if (parent_element_to_check === null)
+            {
+                console.log('No parent with data-index attribute found.');
+                return [audio_filename, audio_data];
+            }
+
+            const play_button_mouse_event = new MouseEvent('mousedown', {
+                bubbles: true,
+                cancelable: true,
+                view: window
+            });
+
+            let auto_stop_initial_state = false;
+
+            // TODO : Get a better element to select
+            const auto_pause_element = document.querySelectorAll('.PrivateSwitchBase-input')[1];
+            if (auto_pause_element)
+            {
+                auto_stop_initial_state = auto_pause_element.checked;
+                if (!auto_stop_initial_state)
+                {
+                    auto_pause_element.click()
+                    console.log("Autopause has been turned ON");
+                }
+            }
+
+            const stream = video_element.captureStream();
+            const audioStream = new MediaStream(stream.getAudioTracks());
+
+            const recorder = new MediaRecorder(audioStream);
+            const chunks = [];
+
+            recorder.ondataavailable = event => chunks.push(event.data);
+            const audio_promise = new Promise((resolve, reject) =>
+            {
+                recorder.onstop = () =>
+                {
+                    const blob = new Blob(chunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = () =>
+                    {
+                        audio_data = reader.result.split(',')[1];
+                        resolve([audio_filename, audio_data]);
+                    };
+                    reader.readAsDataURL(blob);
+                };
+            });
+
+            video_element.addEventListener('timeupdate', function onTimeUpdate()
+            {
+                if (video_element.paused && video_element.readyState === 4)
+                {
+                    recorder.stop();
+                    clearTimeout(audio_recording_timeout);
+
+                    console.warn("Audio recording finsihed!");
+                    video_element.removeEventListener('timeupdate', onTimeUpdate);
+
+                    if (!auto_stop_initial_state)
+                    {
+                        auto_pause_element.click()
+                        console.log("Autopause has been turned back OFF");
+                    }
+                    video_element.pause();
+                }
+            });
+
+            const audio_recording_timeout = setTimeout(() =>
+            {
+                recorder.stop();
+                console.warn("Audio recording stopped after 5 seconds");
+
+                video_element.removeEventListener('timeupdate', onTimeUpdate);
+
+                if (!auto_stop_initial_state)
+                {
+                    auto_pause_element.click();
+                    console.log("Autopause has been turned back OFF");
+                }
+            }, 16000); // 16 seconds
+
+            console.log("Audio recording started");
+            element_to_start_search_for_subtitle_index.dispatchEvent(play_button_mouse_event);
+            recorder.start();
+
+            return audio_promise;
+        }
+    }
+
     function handle_side_bar_dictionary()
     {
         chrome.storage.local.get(
             [
+                "ankiConnectUrl",
                 "ankiDeckNameSelected",
                 "ankiNoteNameSelected",
                 "ankiFieldWord",
@@ -287,9 +426,10 @@
                 "ankiExampleSentence",
                 "ankiBasicTranslation",
                 "ankiExtraTranslation",
-                "ankiConnectUrl"
+                "ankiAudio",
             ],
             async ({
+                ankiConnectUrl,
                 ankiDeckNameSelected,
                 ankiNoteNameSelected,
                 ankiFieldWord,
@@ -299,7 +439,7 @@
                 ankiExampleSentence,
                 ankiBasicTranslation,
                 ankiExtraTranslation,
-                ankiConnectUrl }) =>
+                ankiAudio }) =>
             {
                 /*
                 root_dictionary     - the actual dictionary panel on the right
@@ -312,36 +452,61 @@
                 console.log("[Handle_Subtitle_Dictionary] Get Sidebar Dictionary Information...");
 
                 let fields = {};
-                let screenshot_data = {};
+                let image_data = {};
+                let audio_data = {};
 
-                //console.log("TEXT_PAGE_OBSERVER_SET", TEXT_PAGE_OBSERVER_SET);
-                //console.log("VIDEO_PAGE_OBSERVER_SET", VIDEO_PAGE_OBSERVER_SET);
+                //console.log("RTA_TEXT_PAGE_OBSERVER_SET", RTA_TEXT_PAGE_OBSERVER_SET);
+                //console.log("RTA_VIDEO_PAGE_OBSERVER_SET", RTA_VIDEO_PAGE_OBSERVER_SET);
                 //console.log("ankiScreenshot", ankiScreenshot);
 
                 // Dont do this on a text page
-                if (ankiScreenshot && TEXT_PAGE_OBSERVER_SET)
+                if ((ankiScreenshot || ankiAudio) && RTA_TEXT_PAGE_OBSERVER_SET)
                 {
                     // TODO : This only works for the "video-file" mode, and not "youtube" mode
                     let video_element = null;
-                    if (!VIDEO_PAGE_OBSERVER_SET)
+                    if (!RTA_VIDEO_PAGE_OBSERVER_SET)
                     {
                         video_element = document.getElementsByTagName('video')[0];
                     }
 
                     console.log("video_element", video_element);
 
-                    if (video_element)
+                    // TODO : Find a better video id
+                    const src = video_element.src;          // 'blob:https://www.languagereactor.com/f4456bab-fcd6-49af-b3a7-fd528711e275'
+                    const video_id = src.split('-').pop();  // fd528711e275
+
+                    if (ankiAudio && video_element)
+                    {
+                        console.log("Fill ankiAudio");
+
+                        const [filename, data] = await capture_video_audio(video_element, video_id);
+
+                        if (data)
+                        {
+                            audio_data['data'] = data;
+                            audio_data['filename'] = filename;
+
+                            console.log("audio_data :", audio_data);
+                        }
+
+                        fields[ankiAudio] = `[sound:'${filename}']`;
+                    }
+
+                    if (ankiScreenshot && video_element)
                     {
                         console.log("Fill ankiScreenshot");
 
-                        const [image_filename, image_data] = await capture_video_screenshot(video_element);
+                        const [filename, data] = await capture_video_screenshot(video_element, video_id);
 
-                        screenshot_data['data'] = image_data;
-                        screenshot_data['filename'] = image_filename;
+                        if (data)
+                        {
+                            image_data['data'] = data;
+                            image_data['filename'] = filename;
 
-                        //console.log("screenshot_data :", screenshot_data);
+                            //console.log("image_data :", image_data);
+                        }
 
-                        fields[ankiScreenshot] = '<img src="' + image_filename + '" />';
+                        fields[ankiScreenshot] = `<img src="${filename}'" />`;
                     }
                 }
 
@@ -379,9 +544,9 @@
                     }
                 }
 
-                if (CLICKED_SENTENCE_ELEMENT)
+                if (RTA_CLICKED_SENTENCE_ELEMENT)
                 {
-                    console.log("CLICKED_SENTENCE_ELEMENT", CLICKED_SENTENCE_ELEMENT);
+                    console.log("RTA_CLICKED_SENTENCE_ELEMENT", RTA_CLICKED_SENTENCE_ELEMENT);
 
                     // when right side sub
                     //      sentence    = sentence_element.getElementsByClassName('sentence-view')[0].innerText;
@@ -390,14 +555,14 @@
                     // when under video
                     //      sentence    = sentence_element.getElementsByClassName('sentence-view');
                     //      translation = sentence_element.getElementsByClassName('main-translation-wrap').innerText;
-                    
+
                     if (ankiSentence)
                     {
                         console.log("Fill ankiSentence");
 
                         let sentence = '';
 
-                        const sentence_element = CLICKED_SENTENCE_ELEMENT.getElementsByClassName('sentence-view')[0];
+                        const sentence_element = RTA_CLICKED_SENTENCE_ELEMENT.getElementsByClassName('sentence-view')[0];
                         if (sentence_element)
                         {
                             sentence = sentence_element.innerText.replace(/(\r\n|\n|\r)/gm, ""); // Remove the newlines
@@ -419,7 +584,7 @@
 
                         let sentence_translation = '';
 
-                        const translation_wrap = CLICKED_SENTENCE_ELEMENT.getElementsByClassName('main-translation-wrap')[0];
+                        const translation_wrap = RTA_CLICKED_SENTENCE_ELEMENT.getElementsByClassName('main-translation-wrap')[0];
 
                         if (translation_wrap)
                         {
