@@ -217,6 +217,62 @@
 
         return Promise.resolve([image_filename, image_data]);
     }
+    function test_subtitle_jump()
+    {
+        let audio_filename = '';
+        let audio_data = null;
+
+        // word was clicked from under subtitle
+        //const RTA_CLICKED_SENTENCE_ELEMENT = document.getElementsByClassName('bottom-panel')[1];
+        // word was clicked from list of subtitles
+        const RTA_CLICKED_SENTENCE_ELEMENT = document.getElementsByClassName('sentence-wrap')[11];
+
+        console.log("RTA_CLICKED_SENTENCE_ELEMENT", RTA_CLICKED_SENTENCE_ELEMENT);
+
+        // word was clicked from subtitles on the right
+        let element_to_start_search_for_subtitle_index = RTA_CLICKED_SENTENCE_ELEMENT;
+
+        if (RTA_CLICKED_SENTENCE_ELEMENT.className === 'bottom-panel')
+        {
+            // word was clicked from subtitle under the video
+            const jump_to_current_sub_in_right_list = document.querySelector('[data-testid="VerticalAlignCenterIcon"]');
+            if (jump_to_current_sub_in_right_list)
+            {
+                jump_to_current_sub_in_right_list.parentElement.click()
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+
+            const sentence_element_in_subtitle_list = document.querySelector('.lri-SubsView-wrap .lr-play-btn.always-visible');
+            if (!sentence_element_in_subtitle_list)
+            {
+                console.warn("We were unable to get the sentence from where the play button is in the subtitle list")
+            }
+            element_to_start_search_for_subtitle_index = sentence_element_in_subtitle_list
+        }
+
+        let data_index_value = 0;
+        let parent_element_to_check = element_to_start_search_for_subtitle_index;
+        while (parent_element_to_check !== null)
+        {
+            if (parent_element_to_check.hasAttribute('data-index'))
+            {
+                data_index_value = parent_element_to_check.getAttribute('data-index');
+                console.log('Found data-index:', data_index_value);
+                break;
+            }
+
+            parent_element_to_check = parent_element_to_check.parentElement;
+        }
+
+        const play_button_mouse_event = new MouseEvent('mousedown', {
+            bubbles: true,
+            cancelable: true,
+            view: window
+        });
+
+        console.log("Audio recording started");
+        element_to_start_search_for_subtitle_index.dispatchEvent(play_button_mouse_event);
+    }
 
     function handle_side_bar_dictionary()
     {
