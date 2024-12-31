@@ -175,7 +175,7 @@
 
     async function capture_video_screenshot(video_element, video_id)
     {
-        const video_current_time = video_element.currentTime;
+        const video_current_time = (video_element.currentTime * 1000).toFixed();
 
         const image_filename = `Reactor2Anki_${video_id}_${video_current_time}.png`;
 
@@ -432,7 +432,7 @@
                             console.log("audio_data :", audio_data);
                         }
 
-                        fields[ankiAudio] = `[sound:'${filename}']`;
+                        fields[ankiAudio] = '[sound:' + filename + ']';
                     }
 
                     if (ankiScreenshot && video_element)
@@ -446,10 +446,10 @@
                             image_data['data'] = data;
                             image_data['filename'] = filename;
 
-                            //console.log("image_data :", image_data);
+                            console.log("image_data :", image_data);
                         }
 
-                        fields[ankiScreenshot] = `<img src="${filename}'" />`;
+                        fields[ankiScreenshot] = '<img src="' + filename + '" />';
                     }
                 }
 
@@ -604,12 +604,12 @@
                     "url": ankiConnectUrl || 'http://localhost:8765',
                 }
 
-                send_data_to_anki(anki_settings, fields, screenshot_data);
+                send_data_to_anki(anki_settings, fields, image_data, audio_data);
             }
         );
     }
 
-    function send_data_to_anki(anki_settings, fields, screenshot_data)
+    function send_data_to_anki(anki_settings, fields, image_data, audio_data)
     {
         console.log("destination : ", anki_settings);
 
@@ -623,14 +623,26 @@
 
         let actions = [];
 
-        if (screenshot_data.data)
+        if (image_data.data)
         {
-            console.log("adding image to note :", screenshot_data);
+            console.log("adding image to note :", image_data);
             actions.push({
                 "action": "storeMediaFile",
                 "params": {
-                    "filename": screenshot_data.filename,
-                    "data": screenshot_data.data
+                    "filename": image_data.filename,
+                    "data": image_data.data
+                }
+            });
+        }
+
+        if (audio_data.data)
+        {
+            console.log("Adding audio to note :", audio_data);
+            actions.push({
+                "action": "storeMediaFile",
+                "params": {
+                    "filename": audio_data.filename,
+                    "data": audio_data.data
                 }
             });
         }
