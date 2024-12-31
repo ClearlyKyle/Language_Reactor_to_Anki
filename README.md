@@ -2,7 +2,7 @@
 
 Adds the ability to make flashcards from sentences in the `Youtube`, `Books`, `Video File` and `My Texts` modes.
 
-Currently only tested with Russian, and cards made in the Youtube mode do not have screenshots.
+Currently only tested with Russian, and cards made in the Youtube mode do not have screenshots. Audio is only possible in the `Video File` mode.
 
 ## Setup
 
@@ -13,12 +13,14 @@ Currently only tested with Russian, and cards made in the Youtube mode do not ha
 
 Make sure the field at position 1 in your Anki note type (Tools > Manage Note Types) is set in the extention, if not, then you will get the error "cannot create note because it is empty"
 
-Switching video files will require a refresh before adding the new video and subs
-
 ## Usage
 
 Click a word to bring up the definition popup on the right hand side of the screen.
-Clicking the `Anki` button, this will send the relevant data to the fields set in settings to Anki and create a new card.
+Clicking the `Anki` button, will send the relevant data to the fields set in settings to Anki and create a new card.
+
+Switching video files will require a refresh before adding the new video. 
+
+When audio is needed in `Video File` mode, the screenshot will be taken at the end of the subtitle after the audio has finished playing. Once the Anki button is clicked, do not do anything until the success or error message appears as this could ruin the audio recording. 
 
 ![reading-mode-screenshot](https://github.com/ClearlyKyle/Language_Reactor_to_Anki/blob/master/screenshots/reading_example.png)
 
@@ -28,11 +30,12 @@ Exported data fields:
 
  1) `Word` - currently clicked word
  2) `Sentence` - sentence in which the currently clicked word is in
- 3) `Screenshot` - screenshot is taken at the moment Anki is clicked (only works in 'Video File' mode)
+ 3) `Screenshot` - screenshot is taken at the moment Anki is clicked (only works in `Video File` mode)
  4) `Sentence Translation` - translation of the sentence which is normally on the right
  5) `Example Sentences` - examples given by Tatoeba in the dictionary panel (not current or saved examples)
  6) `Basic Translation` - simple translation of the word
  7) `Extra Translation` - more translation of the current word
+ 8) `Audio` - recording of the audio from the video in `Video File` mode
 
 Settings allow you to choose which fields are filled with what data. A blank options means that data is skipped
 
