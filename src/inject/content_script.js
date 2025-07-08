@@ -42,6 +42,7 @@
     let RTA_TEXT_PAGE_OBSERVER_SET = false;
     let RTA_VIDEO_PAGE_OBSERVER_SET = false;
     let RTA_CLICKED_SENTENCE_ELEMENT = null;
+    let RTA_CLICKED_VIDEO_SENTENCE_ROW = null; // TODO : combine with the above element
 
     const rta_anki_btn = document.createElement("div");
     rta_anki_btn.className = "rta_anki_btn lln-external-dict-btn tippy";
@@ -111,8 +112,8 @@
                             const clicked_element = event.target.closest('.sentence-wrap');
                             if (clicked_element && list_element.contains(clicked_element))
                             {
-                                console.log("RTA_CLICKED_SENTENCE_ELEMENT", RTA_CLICKED_SENTENCE_ELEMENT);
                                 RTA_CLICKED_SENTENCE_ELEMENT = clicked_element;
+                                console.log("RTA_CLICKED_SENTENCE_ELEMENT", RTA_CLICKED_SENTENCE_ELEMENT);
                             }
                         });
                     }
@@ -141,13 +142,18 @@
 
                         list_element.addEventListener('click', (event) =>
                         {
-                            const clicked_element = event.target.closest('.sentence-wrap');
-                            if (clicked_element && list_element.contains(clicked_element))
+                            const path = event.composedPath();
+                            const clicked_element = path.find(el => el.classList && el.classList.contains('sentence-wrap'));
+                            const sentence_row = path.find(el => el.classList && el.classList.contains('sentence-row'));
+                            if (sentence_row && clicked_element && list_element.contains(clicked_element))
                             {
-                                console.log("RTA_CLICKED_SENTENCE_ELEMENT", RTA_CLICKED_SENTENCE_ELEMENT);
                                 RTA_CLICKED_SENTENCE_ELEMENT = clicked_element;
+                                RTA_CLICKED_VIDEO_SENTENCE_ROW = sentence_row;
+                                console.log("RTA_CLICKED_SENTENCE_ELEMENT", RTA_CLICKED_SENTENCE_ELEMENT);
+                                console.log("RTA_CLICKED_VIDEO_SENTENCE_ROW", RTA_CLICKED_VIDEO_SENTENCE_ROW);
                             }
                         });
+
                     }
                 }, 100);
             });
@@ -218,10 +224,10 @@
             let audio_data = null;
 
             // word was clicked from subtitles on the right
-            let element_to_start_search_for_subtitle_index = RTA_CLICKED_SENTENCE_ELEMENT;
+            let element_to_start_search_for_subtitle_index = RTA_CLICKED_VIDEO_SENTENCE_ROW;
 
             // word was clicked from subtitle under the video
-            if (RTA_CLICKED_SENTENCE_ELEMENT.className === 'bottom-panel')
+            if (RTA_CLICKED_VIDEO_SENTENCE_ROW.className === 'bottom-panel')
             {
                 // word was clicked from subtitle under the video
                 const jump_to_current_sub_in_right_list = document.querySelector('[data-testid="VerticalAlignCenterIcon"]');
@@ -239,6 +245,8 @@
                 element_to_start_search_for_subtitle_index = sentence_element_in_subtitle_list
             }
 
+            // Here we are just getting the subtitle index, to help build our audio filename to avoid 
+            // saving multiple of the same audio's
             let data_index_value = 0;
             let parent_element_to_check = element_to_start_search_for_subtitle_index;
             while (parent_element_to_check !== null)
@@ -265,9 +273,9 @@
                 parent_element_to_check = parent_element_to_check.parentElement;
             }
 
-            if (parent_element_to_check === null)
+            if (audio_filename === '')
             {
-                console.log('No parent with data-index attribute found.');
+                console.warn('Unable to find subtitle id to make audio_filename');
                 return [audio_filename, audio_data];
             }
 
@@ -280,7 +288,7 @@
             let auto_stop_initial_state = false;
 
             // TODO : Get a better element to select
-            const auto_pause_element = document.querySelectorAll('.PrivateSwitchBase-input')[1];
+            const auto_pause_element = document.querySelectorAll('[aria-label="Auto-pause"]')[0].childNodes[0];
             if (auto_pause_element)
             {
                 auto_stop_initial_state = auto_pause_element.checked;
@@ -291,10 +299,16 @@
                 }
             }
 
-            const stream = video_element.captureStream();
-            const audioStream = new MediaStream(stream.getAudioTracks());
+            // Check if the video is muted, lol can't record a muted video
+            if (video_element.muted || video_element.volume === 0)
+            {
+                console.warn("Video is muted, cannot capture audio from muted video!");
+            }
 
-            const recorder = new MediaRecorder(audioStream);
+            const stream = video_element.captureStream();
+            const audio_stream = new MediaStream(stream.getAudioTracks());
+
+            const recorder = new MediaRecorder(audio_stream);
             const chunks = [];
 
             recorder.ondataavailable = event => chunks.push(event.data);
