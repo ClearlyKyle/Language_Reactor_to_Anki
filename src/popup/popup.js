@@ -3,11 +3,8 @@ console.log("----- [background.js] LOADED");
 //
 // DEBUG MODE
 //
-const CONSOLE_LOGGING = false;
-if (!CONSOLE_LOGGING)
-{
-    console.log = function () { };
-}
+const CONSOLE_LOGGING = true;
+if (!CONSOLE_LOGGING) console.log = function () { };
 
 //
 // GLOBALS
@@ -15,11 +12,11 @@ if (!CONSOLE_LOGGING)
 let anki_url = 'http://localhost:8765';
 
 const anki_element_names_array = [
-    "ankiNoteNameSelected",
     "ankiConnectUrl",
+    "ankiDeckNameSelected",
+    "ankiNoteNameSelected",
 
     // Fields bellow
-    "ankiDeckNameSelected",
     "ankiFieldWord",
     "ankiSentence",
     "ankiScreenshot",
@@ -103,10 +100,10 @@ function init()
     });
 }
 
-
 //
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 //
+
 function Fetch_From_Anki(body)
 {
     return new Promise((resolve, reject) =>
