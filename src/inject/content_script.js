@@ -258,7 +258,7 @@
 
                     audio_filename = `Reactor2Anki_${video_id}_${data_index_value}.webm`;
 
-                    if (rta_audio_filenames.includes(data_index_value))
+                    if (rta_audio_filenames.includes(audio_filename))
                     {
                         console.log(`${audio_filename} is already in the list`);
                         return [audio_filename, audio_data];
@@ -287,7 +287,8 @@
 
             let auto_stop_initial_state = false;
 
-            // TODO : Get a better element to select
+            // TODO : get a better element to select
+            // TODO : fix issue with small subs not having time to toggle the autopuase 
             const auto_pause_element = document.querySelectorAll('[aria-label="Auto-pause"]')[0].childNodes[0];
             if (auto_pause_element)
             {
