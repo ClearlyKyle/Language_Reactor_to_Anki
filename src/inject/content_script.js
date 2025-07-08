@@ -289,7 +289,7 @@
 
             // TODO : get a better element to select
             // TODO : fix issue with small subs not having time to toggle the autopuase 
-            const auto_pause_element = document.querySelectorAll('[aria-label="Auto-pause"]')[0].childNodes[0];
+            const auto_pause_element = document.querySelectorAll('[aria-label="Auto-pause"]')[1].childNodes[0];
             if (auto_pause_element)
             {
                 auto_stop_initial_state = auto_pause_element.checked;
