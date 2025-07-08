@@ -43,7 +43,6 @@
     let RTA_VIDEO_PAGE_OBSERVER_SET = false;
     let RTA_CLICKED_SENTENCE_ELEMENT = null;
 
-    /* create Anki Button */
     const rta_anki_btn = document.createElement("div");
     rta_anki_btn.className = "rta_anki_btn lln-external-dict-btn tippy";
     rta_anki_btn.innerHTML = "Anki";
@@ -405,57 +404,60 @@
                 // Dont do this on a text page
                 if ((ankiScreenshot || ankiAudio) && RTA_TEXT_PAGE_OBSERVER_SET)
                 {
-                    // TODO : This only works for the "video-file" mode, and not "youtube" mode
                     let video_element = null;
                     if (!RTA_VIDEO_PAGE_OBSERVER_SET)
                     {
                         video_element = document.getElementsByTagName('video')[0];
                     }
 
-                    console.log("video_element", video_element);
-
-                    // TODO : Find a better video id
-                    const src = video_element.src;          // 'blob:https://www.languagereactor.com/f4456bab-fcd6-49af-b3a7-fd528711e275'
-                    const video_id = src.split('-').pop();  // fd528711e275
-
-                    if (ankiAudio && video_element)
+                    // TODO : This only works for the "video-file" mode, and not "youtube" mode
+                    if (video_element)
                     {
-                        console.log("Fill ankiAudio");
+                        console.log("video_element", video_element);
 
-                        const [filename, data] = await capture_video_audio(video_element, video_id);
+                        // TODO : Find a better video id
+                        const src = video_element.src;          // 'blob:https://www.languagereactor.com/f4456bab-fcd6-49af-b3a7-fd528711e275'
+                        const video_id = src.split('-').pop();  // fd528711e275
 
-                        if (data)
+                        if (ankiAudio)
                         {
-                            audio_data['data'] = data;
-                            audio_data['filename'] = filename;
+                            console.log("Fill ankiAudio");
 
-                            console.log("audio_data :", audio_data);
+                            const [filename, data] = await capture_video_audio(video_element, video_id);
+
+                            if (data)
+                            {
+                                audio_data['data'] = data;
+                                audio_data['filename'] = filename;
+
+                                console.log("audio_data :", audio_data);
+                            }
+
+                            fields[ankiAudio] = '[sound:' + filename + ']';
                         }
 
-                        fields[ankiAudio] = '[sound:' + filename + ']';
-                    }
-
-                    if (ankiScreenshot && video_element)
-                    {
-                        console.log("Fill ankiScreenshot");
-
-                        const [filename, data] = await capture_video_screenshot(video_element, video_id);
-
-                        if (data)
+                        if (ankiScreenshot)
                         {
-                            image_data['data'] = data;
-                            image_data['filename'] = filename;
+                            console.log("Fill ankiScreenshot");
 
-                            console.log("image_data :", image_data);
+                            const [filename, data] = await capture_video_screenshot(video_element, video_id);
+
+                            if (data)
+                            {
+                                image_data['data'] = data;
+                                image_data['filename'] = filename;
+
+                                console.log("image_data :", image_data);
+                            }
+
+                            fields[ankiScreenshot] = '<img src="' + filename + '" />';
                         }
-
-                        fields[ankiScreenshot] = '<img src="' + filename + '" />';
                     }
                 }
 
-                const root_dictionary = document.getElementsByClassName('lln-full-dict');
-
                 let selected_word = "";
+
+                const root_dictionary = document.getElementsByClassName('lln-full-dict');
                 if (root_dictionary.length)
                 {
                     /* Get word selected */
