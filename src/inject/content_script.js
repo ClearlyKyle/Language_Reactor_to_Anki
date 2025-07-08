@@ -227,7 +227,7 @@
             let element_to_start_search_for_subtitle_index = RTA_CLICKED_VIDEO_SENTENCE_ROW;
 
             // word was clicked from subtitle under the video
-            if (RTA_CLICKED_VIDEO_SENTENCE_ROW.className === 'bottom-panel')
+            if (RTA_CLICKED_SENTENCE_ELEMENT.className === 'bottom-panel')
             {
                 // word was clicked from subtitle under the video
                 const jump_to_current_sub_in_right_list = document.querySelector('[data-testid="VerticalAlignCenterIcon"]');
@@ -288,7 +288,6 @@
             let auto_stop_initial_state = false;
 
             // TODO : get a better element to select
-            // TODO : fix issue with small subs not having time to toggle the autopuase 
             const auto_pause_element = document.querySelectorAll('[aria-label="Auto-pause"]')[1].childNodes[0];
             if (auto_pause_element)
             {
