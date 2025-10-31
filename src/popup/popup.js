@@ -18,12 +18,14 @@ const anki_element_names_array = [
 
     // Fields bellow
     "ankiFieldWord",
+    "ankiBaseFormSelected",
     "ankiSentence",
     "ankiScreenshot",
     "ankiSentenceTranslation",
     "ankiExampleSentence",
     "ankiBasicTranslation",
     "ankiExtraTranslation",
+    "ankiAiAssistantSelected",
     "ankiAudio",
 ];
 
@@ -149,9 +151,10 @@ function Add_Options_To_Field_Dropdown(element_id, data, saved_value)
     }
 
     const blank = document.createElement("option");
-    blank.value = blank.text = "";
+    blank.value = "";
+    blank.text = "<blank>";
     dropdown.add(blank);
-
+    
     dropdown.value = saved_value;
 }
 
