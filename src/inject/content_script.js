@@ -376,12 +376,14 @@
                 "ankiDeckNameSelected",
                 "ankiNoteNameSelected",
                 "ankiFieldWord",
+                "ankiBaseFormSelected",
                 "ankiSentence",
                 "ankiScreenshot",
                 "ankiSentenceTranslation",
                 "ankiExampleSentence",
                 "ankiBasicTranslation",
                 "ankiExtraTranslation",
+                "ankiAiAssistantSelected",
                 "ankiAudio",
             ],
             async ({
@@ -389,12 +391,14 @@
                 ankiDeckNameSelected,
                 ankiNoteNameSelected,
                 ankiFieldWord,
+                ankiBaseFormSelected,
                 ankiSentence,
                 ankiScreenshot,
                 ankiSentenceTranslation,
                 ankiExampleSentence,
                 ankiBasicTranslation,
                 ankiExtraTranslation,
+                ankiAiAssistantSelected,
                 ankiAudio }) =>
             {
                 /*
@@ -433,23 +437,7 @@
                         const src = video_element.src;          // 'blob:https://www.languagereactor.com/f4456bab-fcd6-49af-b3a7-fd528711e275'
                         const video_id = src.split('-').pop();  // fd528711e275
 
-                        if (ankiAudio)
-                        {
-                            console.log("Fill ankiAudio");
-
-                            const [filename, data] = await capture_video_audio(video_element, video_id);
-
-                            if (data)
-                            {
-                                audio_data['data'] = data;
-                                audio_data['filename'] = filename;
-
-                                console.log("audio_data :", audio_data);
-                            }
-
-                            fields[ankiAudio] = '[sound:' + filename + ']';
-                        }
-
+                        // screenshot first so we can choose the frame we actually want to save
                         if (ankiScreenshot)
                         {
                             console.log("Fill ankiScreenshot");
@@ -466,6 +454,23 @@
 
                             fields[ankiScreenshot] = '<img src="' + filename + '" />';
                         }
+
+                        if (ankiAudio)
+                        {
+                            console.log("Fill ankiAudio");
+
+                            const [filename, data] = await capture_video_audio(video_element, video_id);
+
+                            if (data)
+                            {
+                                audio_data['data'] = data;
+                                audio_data['filename'] = filename;
+
+                                console.log("audio_data :", audio_data);
+                            }
+
+                            fields[ankiAudio] = '[sound:' + filename + ']';
+                        }
                     }
                 }
 
@@ -474,7 +479,7 @@
                 const root_dictionary = document.getElementsByClassName('lln-full-dict');
                 if (root_dictionary.length)
                 {
-                    /* Get word selected */
+                    // get the word selected from the top of the dictionary page
                     selected_word = root_dictionary[0].children[0].children[0].innerText;
 
                     if (ankiFieldWord)
@@ -482,6 +487,14 @@
                         console.log("Fill ankiFieldWord");
 
                         fields[ankiFieldWord] = selected_word;
+                    }
+
+                    if (ankiBaseFormSelected)
+                    {
+                        console.log("Fill ankiBaseFormSelected");
+
+                        // this is the word at the top of the "extra definitions" section
+                        fields[ankiBaseFormSelected] = root_dictionary[0].children[6].children[0].children[0].innerText;
                     }
 
                     if (ankiBasicTranslation)
@@ -497,7 +510,7 @@
                     {
                         console.log("Fill ankiExtraTranslation");
 
-                        const extra_definitions = root_dictionary[0].children[5].innerText.replaceAll('\n', '<br>');
+                        const extra_definitions = root_dictionary[0].children[6].innerText.replaceAll('\n', '<br>');
 
                         fields[ankiExtraTranslation] = extra_definitions;
                     }
@@ -535,6 +548,18 @@
                         }
 
                         fields[ankiSentence] = sentence;
+                    }
+
+                    if (ankiAiAssistantSelected)
+                    {
+                        console.log("Fill ankiAiAssistantSelected");
+
+                        const ai_element = document.getElementsByClassName('lexa-html')[0];
+                        if (ai_element)
+                        {
+                            const ai_text = ai_element.textContent;
+                            fields[ankiAiAssistantSelected] = ai_text;
+                        }
                     }
 
                     if (ankiSentenceTranslation)
